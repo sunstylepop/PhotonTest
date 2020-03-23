@@ -7,10 +7,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using ExitGames.Client.Photon;
 using Assets.Scripts.Game.BlackJack.Model;
+using Assets.Scripts.Lobby;
+using System;
 
 public class MainPanel : MonoBehaviourPunCallbacks
 {
-    private int MyMoney { get; set; }
     private RoomLevel SelectedRoomLevel { get; set; }
     private TypedLobby SqlLobby = new TypedLobby("myLobby", LobbyType.SqlLobby);
 
@@ -82,11 +83,10 @@ public class MainPanel : MonoBehaviourPunCallbacks
     public override void OnConnectedToMaster()
     {
         this.SetActivePanel(SelectionPanel.name);
-        Name.text = PhotonNetwork.LocalPlayer.NickName;
+        Name.text = $"{PhotonNetwork.LocalPlayer.NickName}({PlayerManage.Wallet})";
 
         if(!PhotonNetwork.InLobby)
             PhotonNetwork.JoinLobby();
-
     }
 
     public override void OnCreateRoomFailed(short returnCode, string message)
@@ -101,7 +101,7 @@ public class MainPanel : MonoBehaviourPunCallbacks
 
     public override void OnJoinRandomFailed(short returnCode, string message)
     {
-        string roomName = "Room " + Random.Range(1000, 10000);
+        string roomName = "Room " + UnityEngine.Random.Range(1000, 10000);
 
         RoomOptions options = new RoomOptions
         {
@@ -216,13 +216,13 @@ public class MainPanel : MonoBehaviourPunCallbacks
     {
         SelectedRoomLevel = level;
         
-        if(!RoomManage.CanOpenRoom(level, MyMoney))
+        if(!RoomManage.CanOpenRoom(level, PlayerManage.Wallet))
         {
             Debug.LogError("You Don't have enough money");
             return;
         }
 
-        var sqlFilter = RoomManage.GetSqlLobbyFilter(level, MyMoney);
+        var sqlFilter = RoomManage.GetSqlLobbyFilter(level, PlayerManage.Wallet);
 
         PhotonNetwork.JoinRandomRoom(null, 0, MatchmakingMode.FillRoom, SqlLobby, sqlFilter);
 
@@ -256,13 +256,17 @@ public class MainPanel : MonoBehaviourPunCallbacks
         PlayFabClientAPI.LoginWithCustomID(request, (loginResult) =>
         {
             //取餘額
-            PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(), userInventoryResult => 
+            PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(), userInventoryResult =>
             {
-                if(userInventoryResult.VirtualCurrency.TryGetValue("PI", out int _myMoney))
+                if (userInventoryResult.VirtualCurrency.TryGetValue("PI", out int _myMoney))
                 {
-                    MyMoney = _myMoney;
+                    PlayerManage.Wallet = _myMoney;
                 }
-            }, (y) => { 
+                else
+                {
+                    Debug.LogError("Not found PI Currency.");
+                }
+            }, (errResult) => {
                 Debug.LogError("Get VirtualCurrency fail.");
             }
             );
@@ -374,12 +378,23 @@ public class MainPanel : MonoBehaviourPunCallbacks
         Character3.SetActive(false);
         Character4.SetActive(false);
 
-        for(var i = 0; i< PhotonNetwork.PlayerList.Length; i++)
+        Action<GameObject, string> SetCharacter = (c, info) => { 
+            var _text = c.transform.Find("Text").GetComponent<Text>();
+            _text.text = info;
+
+            c.SetActive(true);
+        };
+
+        int i = 0;
+        foreach(var _p in PhotonNetwork.PlayerList)
         {
-            if(i == 0) Character1.SetActive(true);
-            if(i == 1) Character2.SetActive(true);
-            if(i == 2) Character3.SetActive(true);
-            if(i == 3) Character4.SetActive(true);
+            var info = $"{_p.NickName}({(int)_p.CustomProperties[PlayerProperty.Money]})";
+            if (i == 0) SetCharacter(Character1, info);
+            if (i == 1) SetCharacter(Character2, info);
+            if (i == 2) SetCharacter(Character3, info);
+            if (i == 3) SetCharacter(Character4, info);
+
+            i++;
         }
 
     }

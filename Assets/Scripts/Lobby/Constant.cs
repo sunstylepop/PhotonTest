@@ -10,4 +10,9 @@ namespace Assets.Scripts
     {
         //public const string MIN_COST = "MIN_COST";
     }
+
+    class PlayerProperty
+    {
+        public const string Money = "Money";
+    }
 }
