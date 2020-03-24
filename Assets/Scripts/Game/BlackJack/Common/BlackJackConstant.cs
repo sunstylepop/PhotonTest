@@ -11,8 +11,7 @@ namespace Assets.Scripts
 
     enum BlackJackClientEvent
     {
-        Start = 0,
-        GetCard,
+        GetCard = 0,
         Pass
     }
 

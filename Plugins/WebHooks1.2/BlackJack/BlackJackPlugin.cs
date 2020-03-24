@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 
 namespace Photon.Hive.Plugin.WebHooks
 {
-    class TwentyOnePersonData
+    class BlackJackPlayerData
     {
         public int ActorNr { get; set; }
         public int Location { get; set; }
@@ -20,7 +20,7 @@ namespace Photon.Hive.Plugin.WebHooks
         public bool IsPass { get; set; }
     }
 
-    public class MyPlugin : PluginBase
+    public class BlackJackPlugin : PluginBase
     {
         private BlackJackServerState curState { get; set; }
         private int[] cardAry { get; set; }
@@ -29,18 +29,18 @@ namespace Photon.Hive.Plugin.WebHooks
         private int secPerRound = 5000; //每回合考慮時間
 
         private int RoundPtr = -1;
-        private TwentyOnePersonData Banker { get; set; }
-        private Dictionary<string, TwentyOnePersonData> InGamePlayer { get; set; }
+        private BlackJackPlayerData Banker { get; set; }
+        private Dictionary<string, BlackJackPlayerData> InGamePlayer { get; set; }
 
         public override string Name
         {
             get
             {
-                return "MyPlugin";
+                return "BlackJackPlugin";
             }
         }
 
-        public MyPlugin()
+        public BlackJackPlugin()
         {
             this.UseStrictMode = true;
             curState = BlackJackServerState.Wait;
@@ -54,53 +54,6 @@ namespace Photon.Hive.Plugin.WebHooks
 
             switch ((BlackJackClientEvent)info.Request.EvCode)
             {
-                case BlackJackClientEvent.Start:
-                    if (curState != BlackJackServerState.Wait) return;
-
-                    curState = BlackJackServerState.PersonalRound;
-                    BroadcastEvent(BlackJackServerEvent.Start, null);
-
-                    //1.洗牌
-                    Random rnd = new Random();
-                    cardAry = Enumerable.Range(0, 52).OrderBy(n => rnd.Next()).ToArray();
-
-                    InGamePlayer = new Dictionary<string, TwentyOnePersonData>();
-
-                    int l = 0;
-                    foreach (var actor in PluginHost.GameActors)
-                    {
-                        var _data = new TwentyOnePersonData();
-                        _data.Card = cardAry.Where((item, index) => index >= l*2 && index < (l*2) + 2).ToArray();
-                        _data.ActorNr = actor.ActorNr;
-                        _data.Location = l++;
-                        _data.UserId = actor.UserId;
-                        _data.Nickname = actor.Nickname;
-
-                        InGamePlayer.Add(_data.UserId, _data);
-                    }
-
-                    cardAry = cardAry.Skip(l * 2).ToArray();
-
-                    //2.發送遊戲內玩家資訊
-                    var _playerInfo = InGamePlayer.Select(v => new PlayerInfo()
-                    {
-                        Location = v.Value.Location,
-                        ActorNr = v.Value.ActorNr,
-                        Nickname = v.Value.Nickname
-                    }).ToList();
-
-                    BroadcastEvent(BlackJackServerEvent.PlayerInfo, _playerInfo);
-
-                    //3.獨自發送牌給各玩家
-                    foreach (var _p in InGamePlayer)
-                    {
-                        SendEvent(_p.Value.ActorNr, BlackJackServerEvent.Deal, _p.Value.Card);
-                    }
-
-
-                    //4.依序詢問各玩家是否要牌
-                    PersonalRoundLoop();
-                    break;
                 case BlackJackClientEvent.GetCard:
                     PlayerGetCard(info.UserId);
                     break;
@@ -111,29 +64,71 @@ namespace Photon.Hive.Plugin.WebHooks
           
         }
 
-        //public override void OnJoin(IJoinGameCallInfo info)
-        //{
-        //    base.OnJoin(info);
-        //    if (this.PluginHost.GameActors.Count >= 2)
-        //    {
-        //        var env = this.PluginHost.GetEnvironmentVersion();
-        //        var gs = this.PluginHost.GetSerializableGameState();
+        public override void OnJoin(IJoinGameCallInfo info)
+        {
+            base.OnJoin(info);
+            if (this.PluginHost.GameActors.Count == 2)
+            {
+                if (curState != BlackJackServerState.Wait) return;
+
+                curState = BlackJackServerState.PersonalRound;
+                BroadcastEvent(BlackJackServerEvent.Start, null);
+
+                //1.洗牌
+                Random rnd = new Random();
+                cardAry = Enumerable.Range(0, 52).OrderBy(n => rnd.Next()).ToArray();
+
+                InGamePlayer = new Dictionary<string, BlackJackPlayerData>();
+
+                int l = 0;
+                foreach (var actor in PluginHost.GameActors)
+                {
+                    var _data = new BlackJackPlayerData();
+                    _data.Card = cardAry.Where((item, index) => index >= l * 2 && index < (l * 2) + 2).ToArray();
+                    _data.ActorNr = actor.ActorNr;
+                    _data.Location = l++;
+                    _data.UserId = actor.UserId;
+                    _data.Nickname = actor.Nickname;
+
+                    InGamePlayer.Add(_data.UserId, _data);
+                }
+
+                cardAry = cardAry.Skip(l * 2).ToArray();
+
+                //2.發送遊戲內玩家資訊
+                var _playerInfo = InGamePlayer.Select(v => new PlayerInfo()
+                {
+                    Location = v.Value.Location,
+                    ActorNr = v.Value.ActorNr,
+                    Nickname = v.Value.Nickname
+                }).ToList();
+
+                BroadcastEvent(BlackJackServerEvent.PlayerInfo, _playerInfo);
+
+                //3.獨自發送牌給各玩家
+                foreach (var _p in InGamePlayer)
+                {
+                    SendEvent(_p.Value.ActorNr, BlackJackServerEvent.Deal, _p.Value.Card);
+                }
 
 
+                //4.依序詢問各玩家是否要牌
+                PersonalRoundLoop();
+            }
 
-        //        this.PluginHost.BroadcastEvent(
-        //            target: ReciverGroup.Others,
-        //            senderActor: this.PluginHost.GameActors.First().ActorNr,
-        //            targetGroup: 0,
-        //            data: new Dictionary<byte, object>() { { (byte)17, DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss") } },
-        //            evCode: 17,
-        //            cacheOp: 0);
-        //    }
 
-            
-        //}
+        }
 
         #endregion
+
+
+
+
+
+
+
+
+
 
 
         private void PlayerGetCard(string UserId)

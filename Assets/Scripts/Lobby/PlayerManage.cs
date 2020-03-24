@@ -1,5 +1,6 @@
 ﻿using ExitGames.Client.Photon;
 using Photon.Pun;
+using Photon.Realtime;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,18 +26,18 @@ namespace Assets.Scripts.Lobby
                 PhotonNetwork.LocalPlayer.SetCustomProperties(props);
             }
         }
-        //public static void SetWallet(int w)
-        //{
-        //    Hashtable props = new Hashtable
-        //    {
-        //        {PlayerProperty.Money, w}
-        //    };
-        //    PhotonNetwork.LocalPlayer.SetCustomProperties(props);
-        //}
+    }
 
-        //public static int GetWallet()
-        //{
-        //    return (int)PhotonNetwork.LocalPlayer.CustomProperties[PlayerProperty.Money];
-        //}
+    public static class PlayerExtension
+    {
+        public static Player GetPlayerByActorNr(this Player[] PlayerList, int ActorNr)
+        {
+            return PlayerList.FirstOrDefault(x => x.ActorNumber == ActorNr);
+        }
+
+        public static int GetWallet(this Player Player)
+        {
+            return (int)Player.CustomProperties[PlayerProperty.Money];
+        }
     }
 }

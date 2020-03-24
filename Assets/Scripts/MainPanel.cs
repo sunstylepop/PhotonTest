@@ -9,8 +9,9 @@ using ExitGames.Client.Photon;
 using Assets.Scripts.Game.BlackJack.Model;
 using Assets.Scripts.Lobby;
 using System;
+using Assets.Scripts.Game.BlackJack;
 
-public class MainPanel : MonoBehaviourPunCallbacks
+public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 {
     private RoomLevel SelectedRoomLevel { get; set; }
     private TypedLobby SqlLobby = new TypedLobby("myLobby", LobbyType.SqlLobby);
@@ -24,12 +25,6 @@ public class MainPanel : MonoBehaviourPunCallbacks
     public GameObject SelectionPanel;
     public Text Name;
 
-    //[Header("Create Room Panel")]
-    //public GameObject CreateRoomPanel;
-
-    //public InputField RoomNameInputField;
-    //public InputField MaxPlayersInputField;
-
     [Header("Queue Room Panel")]
     public GameObject QueueRoomPanel;
     public GameObject Character1;
@@ -37,24 +32,9 @@ public class MainPanel : MonoBehaviourPunCallbacks
     public GameObject Character3;
     public GameObject Character4;
 
-    //[Header("Room List Panel")]
-    //public GameObject RoomListPanel;
+    [Header("Game Panel")]
+    public GameObject GamePanel;
 
-    //public GameObject RoomListContent;
-    //public GameObject RoomListEntryPrefab;
-
-    //[Header("Inside Room Panel")]
-    //public GameObject InsideRoomPanel;
-
-    //public GameObject GamePanel;
-
-    //public Button StartGameButton;
-    //public GameObject PlayerListEntryPrefab;
-
-    //private Dictionary<string, GameObject> roomListEntries;
-    //private Dictionary<int, GameObject> playerListEntries;
-
-    //private Logic twentyOneLogic;
 
     #region UNITY
 
@@ -62,13 +42,7 @@ public class MainPanel : MonoBehaviourPunCallbacks
     {
         //PhotonNetwork.AutomaticallySyncScene = true;
 
-        //roomListEntries = new Dictionary<string, GameObject>();
-
         PlayerNameInput.text = "MM2";
-
-        //twentyOneLogic = new Logic(transform);
-        //twentyOneLogic.GameStartAct = () => { SetActivePanel(GamePanel.name); };
-
     }
 
     #endregion
@@ -108,7 +82,7 @@ public class MainPanel : MonoBehaviourPunCallbacks
             MaxPlayers = 4,
             CustomRoomProperties = RoomManage.GetRoomProperty(SelectedRoomLevel),
             CustomRoomPropertiesForLobby = RoomManage.GetRoomPropertiesForLobby(),
-            Plugins = new string[] { "MyPlugin" }
+            Plugins = new string[] { "BlackJackPlugin" }
         };
 
         PhotonNetwork.CreateRoom(roomName, options, SqlLobby);
@@ -138,79 +112,25 @@ public class MainPanel : MonoBehaviourPunCallbacks
         SetCharacterInQueueRoom();
     }
 
-    //public override void OnMasterClientSwitched(Player newMasterClient)
-    //{
-    //    if (PhotonNetwork.LocalPlayer.ActorNumber == newMasterClient.ActorNumber)
-    //    {
-    //        StartGameButton.gameObject.SetActive(CheckPlayersReady());
-    //    }
-    //}
+    /// <summary> IOnEventCallback Event </summary>
+    public void OnEvent(EventData photonEvent)
+    {
+        if ((BlackJackServerEvent)photonEvent.Code == BlackJackServerEvent.Start)
+        {
+            SetActivePanel(GamePanel.name);
+        }
 
-    //public override void OnPlayerPropertiesUpdate(Player targetPlayer, Hashtable changedProps)
-    //{
-    //    if (playerListEntries == null)
-    //    {
-    //        playerListEntries = new Dictionary<int, GameObject>();
-    //    }
-
-    //    GameObject entry;
-    //    if (playerListEntries.TryGetValue(targetPlayer.ActorNumber, out entry))
-    //    {
-    //        object isPlayerReady;
-    //        if (changedProps.TryGetValue(AsteroidsGame.PLAYER_READY, out isPlayerReady))
-    //        {
-    //            entry.GetComponent<PlayerListEntry>().SetPlayerReady((bool)isPlayerReady);
-    //        }
-    //    }
-
-    //    StartGameButton.gameObject.SetActive(CheckPlayersReady());
-    //}
-
+        if (GamePanel.activeInHierarchy)
+        {
+            var _gamePanel = GamePanel.GetComponent<GamePanel>();
+            _gamePanel.Listens(photonEvent);
+        }
+    }
 
     #endregion
 
 
     #region UI CALLBACKS
-
-    //public void OnGetCardButtonClicked()
-    //{
-    //    PhotonNetwork.RaiseEvent((byte)TwentyOneClientEvent.GetCard, null, null, SendOptions.SendReliable);
-    //}
-
-    //public void OnPassButtonClicked()
-    //{
-    //    PhotonNetwork.RaiseEvent((byte)TwentyOneClientEvent.Pass, null, null, SendOptions.SendReliable);
-    //}
-
-    //public void OnEvent(EventData photonEvent)
-    //{
-    //    if (twentyOneLogic != null)
-    //        twentyOneLogic.Listens(photonEvent);
-    //}
-
-    //public void OnBackButtonClicked()
-    //{
-    //    if (PhotonNetwork.InLobby)
-    //    {
-    //        PhotonNetwork.LeaveLobby();
-    //    }
-
-    //    SetActivePanel(SelectionPanel.name);
-    //}
-
-    //public void OnCreateRoomButtonClicked()
-    //{
-    //    string roomName = RoomNameInputField.text;
-    //    roomName = (roomName.Equals(string.Empty)) ? "Room " + Random.Range(1000, 10000) : roomName;
-
-    //    byte maxPlayers;
-    //    byte.TryParse(MaxPlayersInputField.text, out maxPlayers);
-    //    maxPlayers = (byte)Mathf.Clamp(maxPlayers, 2, 8);
-
-    //    RoomOptions options = new RoomOptions { MaxPlayers = maxPlayers, Plugins = new string[] { "MyPlugin" } };
-
-    //    PhotonNetwork.CreateRoom(roomName, options, null);
-    //}
 
     private void JoinGameRoom(RoomLevel level)
     {
@@ -244,6 +164,11 @@ public class MainPanel : MonoBehaviourPunCallbacks
     }
 
     public void OnLeaveQueueRoomButtonClicked()
+    {
+        PhotonNetwork.LeaveRoom();
+    }
+
+    public void OnLeaveGameClicked()
     {
         PhotonNetwork.LeaveRoom();
     }
@@ -302,73 +227,14 @@ public class MainPanel : MonoBehaviourPunCallbacks
         });
     }
 
-    //public void OnRoomListButtonClicked()
-    //{
-    //    if (!PhotonNetwork.InLobby)
-    //    {
-    //        PhotonNetwork.JoinLobby();
-    //    }
-
-    //    SetActivePanel(RoomListPanel.name);
-    //}
-
-    //public void OnStartGameButtonClicked()
-    //{
-    //    PhotonNetwork.CurrentRoom.IsOpen = false;
-    //    PhotonNetwork.CurrentRoom.IsVisible = false;
-
-    //    //PhotonNetwork.LoadLevel("DemoAsteroids-GameScene");
-
-    //    PhotonNetwork.RaiseEvent((byte)TwentyOneClientEvent.Start, null, null, SendOptions.SendReliable);
-    //}
-
     #endregion
-
-    //private bool CheckPlayersReady()
-    //{
-    //    if (!PhotonNetwork.IsMasterClient)
-    //    {
-    //        return false;
-    //    }
-
-    //    foreach (Player p in PhotonNetwork.PlayerList)
-    //    {
-    //        object isPlayerReady;
-    //        if (p.CustomProperties.TryGetValue(AsteroidsGame.PLAYER_READY, out isPlayerReady))
-    //        {
-    //            if (!(bool)isPlayerReady)
-    //            {
-    //                return false;
-    //            }
-    //        }
-    //        else
-    //        {
-    //            return false;
-    //        }
-    //    }
-
-    //    return true;
-    //}
-
-    //public void LocalPlayerPropertiesUpdated()
-    //{
-    //    StartGameButton.gameObject.SetActive(CheckPlayersReady());
-    //}
-
-    //public void BackToLoginPage()
-    //{
-    //    PhotonNetwork.Disconnect();
-    //    SetActivePanel(LoginPanel.name);
-    //}
 
     private void SetActivePanel(string activePanel)
     {
         LoginPanel.SetActive(activePanel.Equals(LoginPanel.name));
         SelectionPanel.SetActive(activePanel.Equals(SelectionPanel.name));
         QueueRoomPanel.SetActive(activePanel.Equals(QueueRoomPanel.name));
-        //RoomListPanel.SetActive(activePanel.Equals(RoomListPanel.name));    // UI should call OnRoomListButtonClicked() to activate this
-        //InsideRoomPanel.SetActive(activePanel.Equals(InsideRoomPanel.name));
-        //GamePanel.SetActive(activePanel.Equals(GamePanel.name));
+        GamePanel.SetActive(activePanel.Equals(GamePanel.name));
     }
 
     private void SetCharacterInQueueRoom()
