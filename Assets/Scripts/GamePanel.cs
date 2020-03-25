@@ -11,6 +11,7 @@ using UnityEngine.UI;
 
 public class GamePanel : MonoBehaviour
 {
+    private PlayerInfo Banker { get; set; }
     private Dictionary<int, PlayerInfo> InGamePlayer { get; set; }
     private int MyLocation = 0;
     private PlayerInfo MyPlayerInfo { get; set; }
@@ -29,8 +30,17 @@ public class GamePanel : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        //莊家
+        BankerHolder.SetActive(true);
+        var bankerBaseCards = Banker.BaseCards == null || Banker.BaseCards.Length == 0 ? "? ?" : string.Join(" ", ConvertCardPoint(Banker.BaseCards));
+        var bankerExtraCards = Banker.ExtraCards == null || Banker.ExtraCards.Length == 0 ? "" : string.Join(" ", ConvertCardPoint(Banker.ExtraCards));
+        BankerHolder.transform.Find("Cards").GetComponent<Text>().text = $"{bankerBaseCards} {bankerExtraCards}";
 
-        foreach(var _p in InGamePlayer)
+        BankerHolder.transform.Find("CardTypeText").GetComponent<Text>().text = $"{Banker.CardTypeStr}";
+
+
+        //玩家
+        foreach (var _p in InGamePlayer)
         {
             var newLocation = (_p.Value.Location + (3 - MyLocation)) % 3;
 
@@ -60,6 +70,9 @@ public class GamePanel : MonoBehaviour
                 if(playerData != null)
                     gameObject.transform.Find("info").GetComponent<Text>().text = $"{playerData.NickName}({playerData.GetWallet()})";
 
+                //顯示牌型
+                gameObject.transform.Find("CardTypeText").GetComponent<Text>().text = $"{_p.Value.CardTypeStr}";
+
                 gameObject.SetActive(true);
             }
         }
@@ -78,6 +91,9 @@ public class GamePanel : MonoBehaviour
             case BlackJackServerEvent.Deal:
                 SetPlayerCardAndShow(ParserModel<int[]>(photonEvent.Parameters));
                 break;
+            case BlackJackServerEvent.SpecialType:
+                SetSpecialTypeCard(ParserModel<List<PlayerInfo>>(photonEvent.Parameters));
+                break;
             case BlackJackServerEvent.PersonalRound:
                 CountDownRound(ParserModel<PersonalRoundEvent>(photonEvent.Parameters));
                 break;
@@ -86,6 +102,9 @@ public class GamePanel : MonoBehaviour
                 break;
             case BlackJackServerEvent.Pass:
                 DisableButtonHolder(ParserModel<PassEvent>(photonEvent.Parameters));
+                break;
+            case BlackJackServerEvent.ShowBankCard:
+                ShowBankCard(ParserModel<BankerCardEvent>(photonEvent.Parameters));
                 break;
         }
     }
@@ -122,7 +141,17 @@ public class GamePanel : MonoBehaviour
         TimerHolder.SetActive(false);
         ButtonHolder.SetActive(false);
 
+        Banker = new PlayerInfo();
         InGamePlayer = new Dictionary<int, PlayerInfo>();
+    }
+
+    private void SetSpecialTypeCard(List<PlayerInfo> playerInfoList)
+    {
+        foreach(var _p in playerInfoList)
+        {
+            InGamePlayer[_p.Location].BaseCards = _p.BaseCards;
+            InGamePlayer[_p.Location].CardType = _p.CardType;
+        }
     }
 
     private void SetPlayerInfo(List<PlayerInfo> playerInfoList)
@@ -152,10 +181,7 @@ public class GamePanel : MonoBehaviour
 
     private void CountDownRound(PersonalRoundEvent e)
     {
-        if (MyLocation == e.Location)
-        {
-            ButtonHolder.SetActive(true);
-        }
+        ButtonHolder.SetActive(MyLocation == e.Location);
 
         BlackJackTimer timer = TimerHolder.GetComponent<BlackJackTimer>();
         timer.StartCount(e.TimeOut / 1000);
@@ -164,6 +190,8 @@ public class GamePanel : MonoBehaviour
 
     private void AddExtraCard(GetCardEvent e)
     {
+        InGamePlayer[e.Location].CardType = e.CradType;
+        if(e.BaseCards != null) InGamePlayer[e.Location].BaseCards = e.BaseCards;
         InGamePlayer[e.Location].ExtraCards = e.ExtraCard;
     }
 
@@ -171,6 +199,16 @@ public class GamePanel : MonoBehaviour
     {
         ButtonHolder.SetActive(false);
         TimerHolder.SetActive(false);
+    }
+
+    private void ShowBankCard(BankerCardEvent e)
+    {
+        ButtonHolder.SetActive(false);
+        TimerHolder.SetActive(false);
+
+        Banker.CardType = e.CardType;
+        Banker.BaseCards = e.BaseCards;
+        Banker.ExtraCards = e.ExtraCard;
     }
 
 }

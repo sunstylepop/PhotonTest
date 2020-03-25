@@ -30,25 +30,15 @@ namespace Assets.Scripts
         /// </summary>
         public int[] ExtraCards { get; set; }
 
-        public int TotalPoint{
-            get
+        public BlackJackCardType CardType { get; set; }
+
+        public string CardTypeStr { 
+            get 
             {
-                int _point = 0;
-
-                Action<int> AddPoint = (p) => { _point += (p + 1) > 10 ? 10 : (p + 1); };
-
-                if(BaseCards != null && BaseCards.Length > 0)
-                {
-                    foreach (var p in BaseCards)
-                        AddPoint(p);
-                }
-
-                if (ExtraCards != null && ExtraCards.Length > 0)
-                {
-                    foreach (var p in ExtraCards)
-                        AddPoint(p);
-                }
-                return _point;
+                if (CardType == BlackJackCardType.BlackJack) return "Black Jack";
+                if (CardType == BlackJackCardType.FiveCard) return "過五關";
+                if (CardType == BlackJackCardType.OverTwentyOne) return "爆!!";
+                return "";
             }
         }
     }
@@ -61,12 +51,21 @@ namespace Assets.Scripts
 
     public class GetCardEvent
     {
+        public BlackJackCardType CradType { get; set; }
         public int Location { get; set; }
+        public int[] BaseCards { get; set; }
         public int[] ExtraCard { get; set; }
     }
 
     public class PassEvent
     {
         public int Location { get; set; }
+    }
+
+    public class BankerCardEvent
+    {
+        public BlackJackCardType CardType { get; set; }
+        public int[] BaseCards { get; set; }
+        public int[] ExtraCard { get; set; }
     }
 }

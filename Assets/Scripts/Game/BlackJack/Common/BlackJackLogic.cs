@@ -9,15 +9,16 @@ namespace Assets.Scripts.Game.BlackJack.Common
     class BlackJackLogic
     {
 
-        public static (int, bool) CalculatResult(int[] BaseCards, int[] ExtraCards)
+        public static (int, BlackJackCardType) CalculatResult(int[] BaseCards, int[] ExtraCards)
         {
             int _point = 0;
             int _countCards = 0;
 
-            if(BaseCards != null && BaseCards.Length == 2)
+            if(ExtraCards == null || ExtraCards.Length == 0)
             {
                 var IsBlackJack = BaseCards.Any(x => x % 13 == 0) && BaseCards.Any(x => x % 13 >= 10);
-                return (21, true);
+                if(IsBlackJack)
+                    return (21, BlackJackCardType.BlackJack);
             }
 
             //A先當1點計算
@@ -43,10 +44,15 @@ namespace Assets.Scripts.Game.BlackJack.Common
 
             if (_point <= 21 && _countCards == 5)
             {
-                return (_point, true);
+                return (_point, BlackJackCardType.FiveCard);
             }
 
-            return (_point, false);
+            if(_point > 21)
+            {
+                return (_point, BlackJackCardType.OverTwentyOne);
+            }
+
+            return (_point, BlackJackCardType.None);
         }
     }
 }

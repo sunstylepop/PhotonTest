@@ -19,6 +19,7 @@ namespace Assets.Scripts
     {
         Start = 0,
         PlayerInfo,
+        SpecialType,
         Deal,
         PersonalRound,
         GiveCard,
@@ -33,5 +34,13 @@ namespace Assets.Scripts
         PersonalRound,
         BankerRound,
         Settlement
+    }
+
+    public enum BlackJackCardType
+    {
+        None,
+        OverTwentyOne,
+        BlackJack,
+        FiveCard
     }
 }
