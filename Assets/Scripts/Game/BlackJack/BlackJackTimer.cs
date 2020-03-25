@@ -19,7 +19,7 @@ public class BlackJackTimer : MonoBehaviour
         if (counting)
         {
             timerTotal -= Time.deltaTime;
-            text.text = timerTotal.ToString();
+            text.text = (Mathf.FloorToInt(timerTotal) + 1).ToString();
 
             if (timerTotal <= 0)
             {
