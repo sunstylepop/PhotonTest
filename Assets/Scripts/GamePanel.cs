@@ -24,6 +24,7 @@ public class GamePanel : MonoBehaviour
     public GameObject P2Holder;
     public GameObject TimerHolder;
     public GameObject ButtonHolder;
+    public GameObject MenuHolder;
 
 
 
@@ -37,6 +38,8 @@ public class GamePanel : MonoBehaviour
         BankerHolder.transform.Find("Cards").GetComponent<Text>().text = $"{bankerBaseCards} {bankerExtraCards}";
 
         BankerHolder.transform.Find("CardTypeText").GetComponent<Text>().text = $"{Banker.CardTypeStr}";
+        var bankerProfitStr = Banker.Profit != 0 ? Banker.Profit.ToString() : "";
+        BankerHolder.transform.Find("ProfitText").GetComponent<Text>().text = $"{bankerProfitStr}";
 
 
         //玩家
@@ -73,6 +76,10 @@ public class GamePanel : MonoBehaviour
                 //顯示牌型
                 gameObject.transform.Find("CardTypeText").GetComponent<Text>().text = $"{_p.Value.CardTypeStr}";
 
+                //顯示輸贏
+                var profitStr = _p.Value.Profit != 0 ? _p.Value.Profit.ToString() : "";
+                gameObject.transform.Find("ProfitText").GetComponent<Text>().text = $"{profitStr}";
+
                 gameObject.SetActive(true);
             }
         }
@@ -106,6 +113,9 @@ public class GamePanel : MonoBehaviour
             case BlackJackServerEvent.ShowBankCard:
                 ShowBankCard(ParserModel<BankerCardEvent>(photonEvent.Parameters));
                 break;
+            case BlackJackServerEvent.Settle:
+                SettlementProc(ParserModel<SettlementEvent>(photonEvent.Parameters));
+                break;
         }
     }
 
@@ -134,12 +144,17 @@ public class GamePanel : MonoBehaviour
 
     private void Init()
     {
+        //todo: 可能要改到server端做
+        PhotonNetwork.CurrentRoom.IsOpen = false;
+        PhotonNetwork.CurrentRoom.IsVisible = false;
+
         BankerHolder.SetActive(false);
         P0Holder.SetActive(false);
         P1Holder.SetActive(false);
         P2Holder.SetActive(false);
         TimerHolder.SetActive(false);
         ButtonHolder.SetActive(false);
+        MenuHolder.SetActive(false);
 
         Banker = new PlayerInfo();
         InGamePlayer = new Dictionary<int, PlayerInfo>();
@@ -209,6 +224,18 @@ public class GamePanel : MonoBehaviour
         Banker.CardType = e.CardType;
         Banker.BaseCards = e.BaseCards;
         Banker.ExtraCards = e.ExtraCard;
+    }
+
+    private void SettlementProc(SettlementEvent e)
+    {
+        Banker.Profit = e.Banker.Profit;
+
+        foreach(var _p in e.PlayerList)
+        {
+            InGamePlayer[_p.Location].Profit = _p.Profit;
+        }
+
+        MenuHolder.SetActive(true);
     }
 
 }

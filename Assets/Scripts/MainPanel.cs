@@ -15,6 +15,7 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 {
     private RoomLevel SelectedRoomLevel { get; set; }
     private TypedLobby SqlLobby = new TypedLobby("myLobby", LobbyType.SqlLobby);
+    private bool rePlay = false;
 
 
     [Header("Login Panel")]
@@ -59,7 +60,12 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
         this.SetActivePanel(SelectionPanel.name);
         Name.text = $"{PhotonNetwork.LocalPlayer.NickName}({PlayerManage.Wallet})";
 
-        if(!PhotonNetwork.InLobby)
+        if (rePlay)
+        {
+            rePlay = false;
+            JoinGameRoom(SelectedRoomLevel);
+        }
+        else if(!PhotonNetwork.InLobby)
             PhotonNetwork.JoinLobby();
     }
 
@@ -146,6 +152,13 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 
         PhotonNetwork.JoinRandomRoom(null, 0, MatchmakingMode.FillRoom, SqlLobby, sqlFilter);
 
+    }
+
+    public void OnRePlayClicked()
+    {
+        rePlay = true;
+
+        PhotonNetwork.LeaveRoom();
     }
 
     public void OnJoinLowRoomButtonClicked()

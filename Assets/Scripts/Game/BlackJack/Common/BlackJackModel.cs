@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Collections.Generic;
 
 namespace Assets.Scripts
 {
@@ -31,6 +32,8 @@ namespace Assets.Scripts
         public int[] ExtraCards { get; set; }
 
         public BlackJackCardType CardType { get; set; }
+
+        public int Profit { get; set; }
 
         public string CardTypeStr { 
             get 
@@ -67,5 +70,12 @@ namespace Assets.Scripts
         public BlackJackCardType CardType { get; set; }
         public int[] BaseCards { get; set; }
         public int[] ExtraCard { get; set; }
+    }
+
+    public class SettlementEvent
+    {
+        public PlayerInfo Banker { get; set; }
+
+        public List<PlayerInfo> PlayerList { get; set; }
     }
 }

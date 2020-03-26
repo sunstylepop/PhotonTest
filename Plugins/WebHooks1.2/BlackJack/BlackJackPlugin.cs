@@ -19,7 +19,10 @@ namespace Photon.Hive.Plugin.WebHooks
 
         public bool IsPass { get; set; }
 
+        public int Point { get; set; }
         public BlackJackCardType CardType { get; set; }
+
+        public int Profit { get; set; }
     }
 
     public class BlackJackPlugin : PluginBase
@@ -69,9 +72,12 @@ namespace Photon.Hive.Plugin.WebHooks
         public override void OnJoin(IJoinGameCallInfo info)
         {
             base.OnJoin(info);
+
             if (this.PluginHost.GameActors.Count == 2)
             {
                 if (curState != BlackJackServerState.Wait) return;
+
+                
 
                 curState = BlackJackServerState.PersonalRound;
                 BroadcastEvent(BlackJackServerEvent.Start, null);
@@ -92,16 +98,14 @@ namespace Photon.Hive.Plugin.WebHooks
                     _data.Location = l++;
                     _data.UserId = actor.UserId;
 
-                    var (point, cardType) = BlackJackLogic.CalculatResult(_data.Card, _data.ExtraCard);
-                    _data.CardType = cardType;
-                    if (cardType != BlackJackCardType.None) _data.IsPass = true;
+                    (_data.Point, _data.CardType) = BlackJackLogic.CalculatResult(_data.Card, _data.ExtraCard);
+                    if (_data.CardType != BlackJackCardType.None) _data.IsPass = true;
 
                     InGamePlayer.Add(_data.UserId, _data);
                 }
 
                 //3. 設置牌給莊家
-                //Banker = new BlackJackPlayerData() { Card = GetCardFromAry(2) };
-                Banker = new BlackJackPlayerData() { Card =new int[] { 0, 11 } };
+                Banker = new BlackJackPlayerData() { Card = GetCardFromAry(2) };
 
                 //4.發送遊戲內玩家資訊
                 var _playerInfo = InGamePlayer.Select(v => new PlayerInfo()
@@ -165,10 +169,9 @@ namespace Photon.Hive.Plugin.WebHooks
             curPlayer.ExtraCard = curPlayer.ExtraCard.Union(GetCardFromAry(1)).ToArray();
 
             //判斷該玩家遊戲結果
-            var (point, cardType) = BlackJackLogic.CalculatResult(curPlayer.Card, curPlayer.ExtraCard);
-            curPlayer.CardType = cardType;
+            (curPlayer.Point, curPlayer.CardType) = BlackJackLogic.CalculatResult(curPlayer.Card, curPlayer.ExtraCard);
 
-            if(curPlayer.CardType != BlackJackCardType.None)
+            if (curPlayer.CardType != BlackJackCardType.None)
             {
                 curPlayer.IsPass = true;
             }
@@ -215,14 +218,13 @@ namespace Photon.Hive.Plugin.WebHooks
 
         private void BankerRoundLoop()
         {
-            var (bankerPoint, cardType) = BlackJackLogic.CalculatResult(Banker.Card, Banker.ExtraCard);
-            Banker.CardType = cardType;
+            (Banker.Point, Banker.CardType) = BlackJackLogic.CalculatResult(Banker.Card, Banker.ExtraCard);
 
             BroadcastEvent(BlackJackServerEvent.ShowBankCard, new BankerCardEvent() { BaseCards = Banker.Card, ExtraCard = Banker.ExtraCard, CardType = Banker.CardType });
 
 
             //特殊牌型或者大於16點就不再要牌
-            if (InGamePlayer.All(x => x.Value.CardType != BlackJackCardType.None) || cardType != BlackJackCardType.None || bankerPoint >= 16)
+            if (InGamePlayer.All(x => x.Value.CardType != BlackJackCardType.None) || Banker.CardType != BlackJackCardType.None || Banker.Point >= 16)
             {
                 PluginHost.CreateOneTimeTimer(SettlementProc, 3000);   //3秒後進入結算
             }
@@ -237,7 +239,57 @@ namespace Photon.Hive.Plugin.WebHooks
 
         private void SettlementProc()
         {
+            var Antes = (int)PluginHost.CustomGameProperties["C1"];
 
+            //計算
+            foreach (var _p in InGamePlayer)
+            {
+                //計算爆掉
+                if (_p.Value.CardType == BlackJackCardType.OverTwentyOne)
+                {
+                    _p.Value.Profit -= Antes;
+                    continue;
+                }
+
+                //玩家有特殊牌型或莊家爆掉直接給錢
+                if (_p.Value.CardType != BlackJackCardType.None || Banker.CardType == BlackJackCardType.OverTwentyOne)
+                {
+                    _p.Value.Profit = Antes;
+                    continue;
+                }
+
+                //莊家特殊牌型直接扣玩家錢
+                if (Banker.CardType != BlackJackCardType.None)
+                {
+                    _p.Value.Profit -= Antes;
+                    continue;
+                }
+
+                //比大小
+                if(_p.Value.Point > Banker.Point)
+                {
+                    _p.Value.Profit = Antes;
+                }
+                else if (_p.Value.Point < Banker.Point)
+                {
+                    _p.Value.Profit -= Antes;
+                }
+            }
+
+            Banker.Profit = InGamePlayer.Values.Sum(x => x.Profit) * -1;
+
+
+            var _settleInfo = new SettlementEvent();
+            _settleInfo.Banker = new PlayerInfo() { Profit = Banker.Profit };
+            _settleInfo.PlayerList = InGamePlayer.Select(v => new PlayerInfo()
+            {
+                Location = v.Value.Location,
+                ActorNr = v.Value.ActorNr,
+                Profit = v.Value.Profit
+            }).ToList();
+
+
+            BroadcastEvent(BlackJackServerEvent.Settle, _settleInfo);
         }
 
         private void BroadcastEvent(BlackJackServerEvent EvCode, object objData)
