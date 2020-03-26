@@ -57,8 +57,12 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 
     public override void OnConnectedToMaster()
     {
+        PlayerManage.UpdateWallet(()=> { 
+            Name.text = $"{PhotonNetwork.LocalPlayer.NickName}({PlayerManage.Wallet})";
+        });
+
         this.SetActivePanel(SelectionPanel.name);
-        Name.text = $"{PhotonNetwork.LocalPlayer.NickName}({PlayerManage.Wallet})";
+
 
         if (rePlay)
         {
@@ -193,21 +197,6 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
         var request = new LoginWithCustomIDRequest { CustomId = playerName, CreateAccount = true };
         PlayFabClientAPI.LoginWithCustomID(request, (loginResult) =>
         {
-            //取餘額
-            PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(), userInventoryResult =>
-            {
-                if (userInventoryResult.VirtualCurrency.TryGetValue("PI", out int _myMoney))
-                {
-                    PlayerManage.Wallet = _myMoney;
-                }
-                else
-                {
-                    Debug.LogError("Not found PI Currency.");
-                }
-            }, (errResult) => {
-                Debug.LogError("Get VirtualCurrency fail.");
-            }
-            );
 
             //新建帳號需修改DisplayName
             if (loginResult.NewlyCreated)

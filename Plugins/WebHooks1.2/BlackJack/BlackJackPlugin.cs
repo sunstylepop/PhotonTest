@@ -6,6 +6,8 @@ using System.Text;
 using Assets.Scripts;
 using Assets.Scripts.Game.BlackJack.Common;
 using Newtonsoft.Json;
+using PlayFab;
+using PlayFab.ServerModels;
 
 namespace Photon.Hive.Plugin.WebHooks
 {
@@ -49,6 +51,9 @@ namespace Photon.Hive.Plugin.WebHooks
         {
             this.UseStrictMode = true;
             curState = BlackJackServerState.Wait;
+
+            PlayFabSettings.staticSettings.TitleId = "960FC";
+            PlayFabSettings.staticSettings.DeveloperSecretKey = "W4A4A6E9XQ4IQJF4BRDPIMR3KQXPCXFUWQXD884GU7RDWD7O4M";   //API Secret Keys
         }
 
         #region Public Methods and Operators
@@ -275,6 +280,29 @@ namespace Photon.Hive.Plugin.WebHooks
                     _p.Value.Profit -= Antes;
                 }
             }
+
+            foreach (var _p in InGamePlayer)
+            {
+                if (_p.Value.Profit > 0)
+                {
+                    PlayFabServerAPI.AddUserVirtualCurrencyAsync(new AddUserVirtualCurrencyRequest()
+                    {
+                        PlayFabId = _p.Value.UserId,
+                        VirtualCurrency = "PI",
+                        Amount = _p.Value.Profit
+                    });
+                }
+                else if (_p.Value.Profit < 0)
+                {
+                    PlayFabServerAPI.SubtractUserVirtualCurrencyAsync(new SubtractUserVirtualCurrencyRequest()
+                    {
+                        PlayFabId = _p.Value.UserId,
+                        VirtualCurrency = "PI",
+                        Amount = _p.Value.Profit * -1
+                    });
+                }
+            }
+
 
             Banker.Profit = InGamePlayer.Values.Sum(x => x.Profit) * -1;
 

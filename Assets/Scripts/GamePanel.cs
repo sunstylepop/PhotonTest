@@ -235,6 +235,8 @@ public class GamePanel : MonoBehaviour
             InGamePlayer[_p.Location].Profit = _p.Profit;
         }
 
+        PlayerManage.Wallet += InGamePlayer[MyLocation].Profit;
+
         MenuHolder.SetActive(true);
     }
 
