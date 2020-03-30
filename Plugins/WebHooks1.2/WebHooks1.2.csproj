@@ -81,6 +81,7 @@
     </Compile>
     <Compile Include="Actor.cs" />
     <Compile Include="BlackJack\BlackJackPlugin.cs" />
+    <Compile Include="PhotonHiv\GameParameter.cs" />
     <Compile Include="WebhooksRequest.cs" />
     <Compile Include="WebhooksResponse.cs" />
     <Compile Include="PluginFactory.cs" />

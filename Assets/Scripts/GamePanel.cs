@@ -144,10 +144,6 @@ public class GamePanel : MonoBehaviour
 
     private void Init()
     {
-        //todo: 可能要改到server端做
-        PhotonNetwork.CurrentRoom.IsOpen = false;
-        PhotonNetwork.CurrentRoom.IsVisible = false;
-
         BankerHolder.SetActive(false);
         P0Holder.SetActive(false);
         P1Holder.SetActive(false);

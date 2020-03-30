@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,6 +7,7 @@ using System.Text;
 using Assets.Scripts;
 using Assets.Scripts.Game.BlackJack.Common;
 using Newtonsoft.Json;
+using Photon.Hive.Operations;
 using PlayFab;
 using PlayFab.ServerModels;
 
@@ -62,6 +64,7 @@ namespace Photon.Hive.Plugin.WebHooks
         {
             //base.OnRaiseEvent(info);
 
+
             switch ((BlackJackClientEvent)info.Request.EvCode)
             {
                 case BlackJackClientEvent.GetCard:
@@ -82,7 +85,11 @@ namespace Photon.Hive.Plugin.WebHooks
             {
                 if (curState != BlackJackServerState.Wait) return;
 
-                
+                //更改房間屬性
+                PluginHost.SetProperties(actorNr: 0, properties: new Hashtable() { 
+                    { (byte)GameParameter.IsOpen, false }, 
+                    { (byte)GameParameter.IsVisible, false } 
+                }, expected: null, broadcast: true);
 
                 curState = BlackJackServerState.PersonalRound;
                 BroadcastEvent(BlackJackServerEvent.Start, null);
