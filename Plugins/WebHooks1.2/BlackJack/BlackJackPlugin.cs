@@ -249,7 +249,7 @@ namespace Photon.Hive.Plugin.WebHooks
             }
         }
 
-        private void SettlementProc()
+        private async void SettlementProc()
         {
             var Antes = (int)PluginHost.CustomGameProperties["C1"];
 
@@ -288,29 +288,6 @@ namespace Photon.Hive.Plugin.WebHooks
                 }
             }
 
-            foreach (var _p in InGamePlayer)
-            {
-                if (_p.Value.Profit > 0)
-                {
-                    PlayFabServerAPI.AddUserVirtualCurrencyAsync(new AddUserVirtualCurrencyRequest()
-                    {
-                        PlayFabId = _p.Value.UserId,
-                        VirtualCurrency = "PI",
-                        Amount = _p.Value.Profit
-                    });
-                }
-                else if (_p.Value.Profit < 0)
-                {
-                    PlayFabServerAPI.SubtractUserVirtualCurrencyAsync(new SubtractUserVirtualCurrencyRequest()
-                    {
-                        PlayFabId = _p.Value.UserId,
-                        VirtualCurrency = "PI",
-                        Amount = _p.Value.Profit * -1
-                    });
-                }
-            }
-
-
             Banker.Profit = InGamePlayer.Values.Sum(x => x.Profit) * -1;
 
 
@@ -323,6 +300,17 @@ namespace Photon.Hive.Plugin.WebHooks
                 Profit = v.Value.Profit
             }).ToList();
 
+            var result = await PlayFabServerAPI.ExecuteCloudScriptAsync(new ExecuteCloudScriptServerRequest()
+            {
+                PlayFabId = InGamePlayer.First().Value.UserId,
+                FunctionName = "BlackJackSettle",
+                FunctionParameter = InGamePlayer.Select(x => new { PlayFabId = x.Value.UserId, Profit = x.Value.Profit }).ToList()
+            });
+
+            if(result.Error != null)
+            {
+                PluginHost.LogError(result.Error);
+            }
 
             BroadcastEvent(BlackJackServerEvent.Settle, _settleInfo);
         }
