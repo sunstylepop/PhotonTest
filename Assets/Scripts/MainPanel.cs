@@ -11,6 +11,7 @@ using Assets.Scripts.Lobby;
 using System;
 using Assets.Scripts.Game.BlackJack;
 using System.Linq;
+using System.Collections.Generic;
 
 public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 {
@@ -214,7 +215,7 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
             }
 
             //使用playfab登入photon
-            PlayFabClientAPI.GetPhotonAuthenticationToken(new GetPhotonAuthenticationTokenRequest() { PhotonApplicationId = "d322b054-8fe5-4ced-9205-f709981ff085" }, (xr) =>
+            PlayFabClientAPI.GetPhotonAuthenticationToken(new GetPhotonAuthenticationTokenRequest() { PhotonApplicationId = PhotonNetwork.PhotonServerSettings.AppSettings.AppIdRealtime }, (xr) =>
             {
                 var customAuth = new AuthenticationValues { AuthType = CustomAuthenticationType.Custom };
 
@@ -288,7 +289,7 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
             JoinGameRoom(SelectedRoomLevel);
         }
         else if (!PhotonNetwork.InLobby)
-            PhotonNetwork.JoinLobby();
+            PhotonNetwork.JoinLobby(SqlLobby);
     }
 
 }
