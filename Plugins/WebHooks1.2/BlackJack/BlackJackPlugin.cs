@@ -34,6 +34,7 @@ namespace Photon.Hive.Plugin.WebHooks
         private BlackJackServerState curState { get; set; }
         private int[] cardAry { get; set; }
         private object Timer { get; set; }
+        private bool IsSettle{ get; set; }
 
         private int secPerRound = 5000; //每回合考慮時間
 
@@ -60,6 +61,18 @@ namespace Photon.Hive.Plugin.WebHooks
 
         #region Public Methods and Operators
 
+        public override void OnCloseGame(ICloseGameCallInfo info)
+        {
+            if (curState != BlackJackServerState.Wait)
+            {
+                if(!IsSettle) SettlementProc();
+
+                SetUserRoomTag(null);
+            }
+
+            info.Continue();
+        }
+
         public override void OnRaiseEvent(IRaiseEventCallInfo info)
         {
             //base.OnRaiseEvent(info);
@@ -74,14 +87,58 @@ namespace Photon.Hive.Plugin.WebHooks
                     PlayerPass(info.UserId);
                     break;
             }
-          
+
+
+            info.Cancel();
         }
 
         public override void OnJoin(IJoinGameCallInfo info)
         {
             base.OnJoin(info);
 
-            if (this.PluginHost.GameActors.Count == 2)
+            if(InGamePlayer != null && InGamePlayer.ContainsKey(info.UserId))
+            {
+                var rejoinPlayer = InGamePlayer[info.UserId];
+
+                var rejoinData = new ReJoinEvent()
+                {
+                    PlayerList = InGamePlayer.Select(v => new PlayerInfo()
+                    {
+                        Location = v.Value.Location,
+                        ActorNr = v.Value.ActorNr,
+                        BaseCards = v.Value.UserId.Equals(info.UserId) || v.Value.CardType != BlackJackCardType.None ? v.Value.Card : null,
+                        ExtraCards = v.Value.ExtraCard,
+                        CardType = v.Value.CardType
+                    }).ToList()
+                };
+
+                if (curState == BlackJackServerState.PersonalRound)
+                {
+                    rejoinData.PersonalRound = new PersonalRoundEvent() { Location = RoundPtr, TimeOut = secPerRound };
+                }
+                
+                if(curState == BlackJackServerState.BankerRound || curState == BlackJackServerState.Settlement)
+                {
+                    rejoinData.Banker = new BankerCardEvent() { BaseCards = Banker.Card, ExtraCard = Banker.ExtraCard, CardType = Banker.CardType };
+                }
+
+                if (curState == BlackJackServerState.Settlement)
+                {
+                    var _settleInfo = new SettlementEvent();
+                    _settleInfo.Banker = new PlayerInfo() { Profit = Banker.Profit };
+                    _settleInfo.PlayerList = InGamePlayer.Select(v => new PlayerInfo()
+                    {
+                        Location = v.Value.Location,
+                        ActorNr = v.Value.ActorNr,
+                        Profit = v.Value.Profit
+                    }).ToList();
+
+                    rejoinData.Settle = _settleInfo;
+                }
+
+                SendEvent(rejoinPlayer.ActorNr, BlackJackServerEvent.ReJoin, rejoinData);
+            }
+            else if (this.PluginHost.GameActors.Count == 2)
             {
                 if (curState != BlackJackServerState.Wait) return;
 
@@ -116,8 +173,11 @@ namespace Photon.Hive.Plugin.WebHooks
                     InGamePlayer.Add(_data.UserId, _data);
                 }
 
+                SetUserRoomTag(info.Request.GameId);
+
                 //3. 設置牌給莊家
                 Banker = new BlackJackPlayerData() { Card = GetCardFromAry(2) };
+                (Banker.Point, Banker.CardType) = BlackJackLogic.CalculatResult(Banker.Card, Banker.ExtraCard);
 
                 //4.發送遊戲內玩家資訊
                 var _playerInfo = InGamePlayer.Select(v => new PlayerInfo()
@@ -150,6 +210,18 @@ namespace Photon.Hive.Plugin.WebHooks
             }
 
 
+        }
+
+        public override void BeforeSetProperties(IBeforeSetPropertiesCallInfo info)
+        {
+            if(info.Request.ActorNumber == 0)
+            {
+                //禁止更動房間任何屬性
+                info.Cancel();
+                return;
+            }
+
+            info.Continue();
         }
 
         #endregion
@@ -238,6 +310,7 @@ namespace Photon.Hive.Plugin.WebHooks
             //特殊牌型或者大於16點就不再要牌
             if (InGamePlayer.All(x => x.Value.CardType != BlackJackCardType.None) || Banker.CardType != BlackJackCardType.None || Banker.Point >= 16)
             {
+                curState = BlackJackServerState.Settlement;
                 PluginHost.CreateOneTimeTimer(SettlementProc, 3000);   //3秒後進入結算
             }
             else
@@ -313,6 +386,8 @@ namespace Photon.Hive.Plugin.WebHooks
             }
 
             BroadcastEvent(BlackJackServerEvent.Settle, _settleInfo);
+
+            IsSettle = true;
         }
 
         private void BroadcastEvent(BlackJackServerEvent EvCode, object objData)
@@ -338,6 +413,20 @@ namespace Photon.Hive.Plugin.WebHooks
                     data: _dic,
                     evCode: (byte)EvCode,
                     cacheOp: 0);
+        }
+
+        private async void SetUserRoomTag(string roomName)
+        {
+            var r = await PlayFabServerAPI.ExecuteCloudScriptAsync(new ExecuteCloudScriptServerRequest()
+            {
+                PlayFabId = InGamePlayer.First().Value.UserId,
+                FunctionName = "SetUserRoomTag",
+                FunctionParameter = new
+                {
+                    Players = InGamePlayer.Values.Select(x => x.UserId).ToList(),
+                    RoomName = roomName
+                }
+            });
         }
     }
 }

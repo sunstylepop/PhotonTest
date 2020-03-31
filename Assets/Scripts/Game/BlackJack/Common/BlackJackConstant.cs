@@ -25,7 +25,8 @@ namespace Assets.Scripts
         GiveCard,
         Pass,
         ShowBankCard,
-        Settle
+        Settle,
+        ReJoin
     }
 
     enum BlackJackServerState

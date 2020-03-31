@@ -116,6 +116,9 @@ public class GamePanel : MonoBehaviour
             case BlackJackServerEvent.Settle:
                 SettlementProc(ParserModel<SettlementEvent>(photonEvent.Parameters));
                 break;
+            case BlackJackServerEvent.ReJoin:
+                ReJoin(ParserModel<ReJoinEvent>(photonEvent.Parameters));
+                break;
         }
     }
 
@@ -234,6 +237,16 @@ public class GamePanel : MonoBehaviour
         PlayerManage.Wallet += InGamePlayer[MyLocation].Profit;
 
         MenuHolder.SetActive(true);
+    }
+
+    private void ReJoin(ReJoinEvent e)
+    {
+        Init();
+        SetPlayerInfo(e.PlayerList);
+
+        if(e.PersonalRound != null) CountDownRound(e.PersonalRound);
+        if(e.Banker != null) ShowBankCard(e.Banker);
+        if(e.Settle != null) SettlementProc(e.Settle);
     }
 
 }

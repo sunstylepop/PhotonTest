@@ -10,6 +10,7 @@ using Assets.Scripts.Game.BlackJack.Model;
 using Assets.Scripts.Lobby;
 using System;
 using Assets.Scripts.Game.BlackJack;
+using System.Linq;
 
 public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 {
@@ -57,20 +58,23 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 
     public override void OnConnectedToMaster()
     {
-        PlayerManage.UpdateWallet(()=> { 
-            Name.text = $"{PhotonNetwork.LocalPlayer.NickName}({PlayerManage.Wallet})";
-        });
-
-        this.SetActivePanel(SelectionPanel.name);
-
-
-        if (rePlay)
+        PlayFabClientAPI.GetUserReadOnlyData(new GetUserDataRequest()
         {
-            rePlay = false;
-            JoinGameRoom(SelectedRoomLevel);
-        }
-        else if(!PhotonNetwork.InLobby)
-            PhotonNetwork.JoinLobby();
+            PlayFabId = PhotonNetwork.LocalPlayer.UserId,
+            Keys = new[] { "LastGameRoom" }.ToList()
+        }, (userDataResult) => {
+            var haveObj = userDataResult.Data.TryGetValue("LastGameRoom", out var userDataRecord);
+            if(haveObj && !string.IsNullOrEmpty(userDataRecord.Value))
+            {
+                PhotonNetwork.RejoinRoom(userDataRecord.Value);
+            }
+            else
+            {
+                ConnectToLobby();
+            }
+        }, (errResult) => {
+            Debug.LogError("Get UserDataRequest fail.");
+        });
     }
 
     public override void OnCreateRoomFailed(short returnCode, string message)
@@ -80,6 +84,7 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 
     public override void OnJoinRoomFailed(short returnCode, string message)
     {
+        ConnectToLobby();
         SetActivePanel(SelectionPanel.name);
     }
 
@@ -92,6 +97,7 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
             MaxPlayers = 4,
             CustomRoomProperties = RoomManage.GetRoomProperty(SelectedRoomLevel),
             CustomRoomPropertiesForLobby = RoomManage.GetRoomPropertiesForLobby(),
+            PlayerTtl = -1, //永久等待玩家重新連入
             Plugins = new string[] { "BlackJackPlugin" }
         };
 
@@ -125,7 +131,7 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
     /// <summary> IOnEventCallback Event </summary>
     public void OnEvent(EventData photonEvent)
     {
-        if ((BlackJackServerEvent)photonEvent.Code == BlackJackServerEvent.Start)
+        if (new[] { BlackJackServerEvent.Start, BlackJackServerEvent.ReJoin }.Contains((BlackJackServerEvent)photonEvent.Code))
         {
             SetActivePanel(GamePanel.name);
         }
@@ -265,6 +271,24 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
             i++;
         }
 
+    }
+
+    public void ConnectToLobby()
+    {
+        PlayerManage.UpdateWallet(() => {
+            Name.text = $"{PhotonNetwork.LocalPlayer.NickName}({PlayerManage.Wallet})";
+        });
+
+        this.SetActivePanel(SelectionPanel.name);
+
+
+        if (rePlay)
+        {
+            rePlay = false;
+            JoinGameRoom(SelectedRoomLevel);
+        }
+        else if (!PhotonNetwork.InLobby)
+            PhotonNetwork.JoinLobby();
     }
 
 }

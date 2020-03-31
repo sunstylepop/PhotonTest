@@ -78,4 +78,15 @@ namespace Assets.Scripts
 
         public List<PlayerInfo> PlayerList { get; set; }
     }
+
+    public class ReJoinEvent
+    {
+        public BankerCardEvent Banker { get; set; }
+
+        public List<PlayerInfo> PlayerList { get; set; }
+
+        public PersonalRoundEvent PersonalRound { get; set; }
+
+        public SettlementEvent Settle { get; set; }
+    }
 }
