@@ -71,7 +71,10 @@ public class GamePanel : MonoBehaviour
                 //設定名子、金錢
                 var playerData = PhotonNetwork.PlayerList.GetPlayerByActorNr(_p.Value.ActorNr);
                 if(playerData != null)
-                    gameObject.transform.Find("info").GetComponent<Text>().text = $"{playerData.NickName}({playerData.GetWallet()})";
+                {
+                    var _name = playerData.NickName.Length <= 6 ? playerData.NickName : playerData.NickName.Substring(0, 6);
+                    gameObject.transform.Find("info").GetComponent<Text>().text = $"{_name}({playerData.GetWallet()})";
+                }
 
                 //顯示牌型
                 gameObject.transform.Find("CardTypeText").GetComponent<Text>().text = $"{_p.Value.CardTypeStr}";

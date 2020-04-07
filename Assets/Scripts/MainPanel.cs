@@ -12,6 +12,8 @@ using System;
 using Assets.Scripts.Game.BlackJack;
 using System.Linq;
 using System.Collections.Generic;
+using Facebook.Unity;
+using Assets.Scripts.Auth;
 
 public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 {
@@ -39,22 +41,30 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
     public GameObject GamePanel;
 
 
-    #region UNITY
+#region UNITY
 
     public void Awake()
     {
-        //PhotonNetwork.AutomaticallySyncScene = true;
+        FB.Init(()=> {
+            //if(AccessToken.CurrentAccessToken != null)
+            //{
+            //    LoginMsg.text = "already login";
+            //}
+        });
 
         PlayerNameInput.text = "MM2";
     }
 
-    #endregion
+#endregion
 
-    #region PUN CALLBACKS
+#region PUN CALLBACKS
 
     public override void OnDisconnected(DisconnectCause cause)
     {
         this.SetActivePanel(LoginPanel.name);
+
+        Loginer _loginer = LoginPanel.transform.Find("LoginMsg").GetComponent<Loginer>();
+        _loginer.SetLoginMsg("Disconnected");
     }
 
     public override void OnConnectedToMaster()
@@ -144,10 +154,10 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
         }
     }
 
-    #endregion
+#endregion
 
 
-    #region UI CALLBACKS
+#region UI CALLBACKS
 
     private void JoinGameRoom(RoomLevel level)
     {
@@ -197,46 +207,35 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
         PhotonNetwork.LeaveRoom();
     }
 
+    public void OnLogoutClicked()
+    {
+        PhotonNetwork.Disconnect();
+    }
+
+    public void OnGuestLoginButtonClicked()
+    {
+        Login<GuestLogin>();
+    }
+
+    public void OnFBLoginButtonClicked()
+    {
+        Login<FaceBookLogin>();
+    }
+
     public void OnLoginButtonClicked()
     {
         string playerName = PlayerNameInput.text;
 
-        var request = new LoginWithCustomIDRequest { CustomId = playerName, CreateAccount = true };
-        PlayFabClientAPI.LoginWithCustomID(request, (loginResult) =>
-        {
-
-            //新建帳號需修改DisplayName
-            if (loginResult.NewlyCreated)
-            {
-                PlayFabClientAPI.UpdateUserTitleDisplayName(new UpdateUserTitleDisplayNameRequest { DisplayName = playerName }, null, (ue) =>
-                {
-                    Debug.LogError("update DisplayName fail.");
-                });
-            }
-
-            //使用playfab登入photon
-            PlayFabClientAPI.GetPhotonAuthenticationToken(new GetPhotonAuthenticationTokenRequest() { PhotonApplicationId = PhotonNetwork.PhotonServerSettings.AppSettings.AppIdRealtime }, (xr) =>
-            {
-                var customAuth = new AuthenticationValues { AuthType = CustomAuthenticationType.Custom };
-
-                customAuth.AddAuthParameter("username", loginResult.PlayFabId);
-                customAuth.AddAuthParameter("token", xr.PhotonCustomAuthenticationToken);
-
-                PhotonNetwork.AuthValues = customAuth;
-                PhotonNetwork.ConnectUsingSettings();
-            },
-            (xe) =>
-            {
-                Debug.LogError("Photon Authentication fail.");
-            });
-
-        }, (e) =>
-        {
-            Debug.LogError("Login Playfab fail.");
-        });
+        Login<NickNameLogin>(playerName);
     }
 
-    #endregion
+    private void Login<T>(string nickName = null) where T : IAuth, new()
+    {
+        Loginer _loginer = LoginPanel.transform.Find("LoginMsg").GetComponent<Loginer>();
+        _loginer.Login<T>(nickName);
+    }
+
+#endregion
 
     private void SetActivePanel(string activePanel)
     {
@@ -277,7 +276,8 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
     public void ConnectToLobby()
     {
         PlayerManage.UpdateWallet(() => {
-            Name.text = $"{PhotonNetwork.LocalPlayer.NickName}({PlayerManage.Wallet})";
+            var _name = PhotonNetwork.LocalPlayer.NickName.Length <= 6 ? PhotonNetwork.LocalPlayer.NickName : PhotonNetwork.LocalPlayer.NickName.Substring(0, 6);
+            Name.text = $"{_name}({PlayerManage.Wallet})";
         });
 
         this.SetActivePanel(SelectionPanel.name);
