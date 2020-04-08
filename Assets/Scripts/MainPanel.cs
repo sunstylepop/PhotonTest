@@ -26,9 +26,14 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
     public GameObject LoginPanel;
     public InputField PlayerNameInput;
 
-    [Header("Selection Panel5")]
+    [Header("Selection Panel")]
     public GameObject SelectionPanel;
     public Text Name;
+
+    [Header("Statistics Panel")]
+    public GameObject StatisticsPanel;
+    public GameObject StatisticsContent;
+    public GameObject StatisticsPrefab;
 
     [Header("Queue Room Panel")]
     public GameObject QueueRoomPanel;
@@ -40,8 +45,9 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
     [Header("Game Panel")]
     public GameObject GamePanel;
 
+    private List<GameObject> StatisticsListEntries = new List<GameObject>();
 
-#region UNITY
+    #region UNITY
 
     public void Awake()
     {
@@ -197,6 +203,55 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
         JoinGameRoom(RoomLevel.High);
     }
 
+    bool StatisticsLock = false;
+    public void OnStatisticsButtonClicked()
+    {
+        if (StatisticsLock) return;
+
+        StatisticsLock = true;
+
+        PlayFabClientAPI.GetLeaderboard(new GetLeaderboardRequest() { StatisticName = "PlayerHighScore", MaxResultsCount = 10 }, (boardResult) =>
+        {
+            int i = 0;
+            foreach(var b in boardResult.Leaderboard)
+            {
+                var _name = b.DisplayName.Length <= 6 ? b.DisplayName : b.DisplayName.Substring(0, 6);
+
+                GameObject entry = Instantiate(StatisticsPrefab);
+                entry.transform.SetParent(StatisticsContent.transform);
+                entry.transform.localScale = Vector3.one;
+                entry.GetComponent<RowPrefab>().Initialize(++i, _name, b.StatValue);
+
+                if (b.PlayFabId == PhotonNetwork.LocalPlayer.UserId)
+                {
+                    var img = entry.GetComponent<Image>();
+                    img.color = new Color(1, 0.5137255f, 0.5137255f, 0.3921569f);
+                }
+
+                StatisticsListEntries.Add(entry);
+            }
+
+            SetActivePanel(StatisticsPanel.name);
+            StatisticsLock = false;
+
+        }, (error) =>
+        {
+            Debug.LogError("Get Leaderboard fail");
+            StatisticsLock = false;
+        });
+    }
+
+    public void OnLeaveStatisticsButtonClicked()
+    {
+        foreach (var g in StatisticsListEntries)
+        {
+            Destroy(g.gameObject);
+        }
+        StatisticsListEntries.Clear();
+
+        SetActivePanel(SelectionPanel.name);
+    }
+
     public void OnLeaveQueueRoomButtonClicked()
     {
         PhotonNetwork.LeaveRoom();
@@ -243,6 +298,7 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
         SelectionPanel.SetActive(activePanel.Equals(SelectionPanel.name));
         QueueRoomPanel.SetActive(activePanel.Equals(QueueRoomPanel.name));
         GamePanel.SetActive(activePanel.Equals(GamePanel.name));
+        StatisticsPanel.SetActive(activePanel.Equals(StatisticsPanel.name));
     }
 
     private void SetCharacterInQueueRoom()
@@ -275,10 +331,8 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 
     public void ConnectToLobby()
     {
-        PlayerManage.UpdateWallet(() => {
-            var _name = PhotonNetwork.LocalPlayer.NickName.Length <= 6 ? PhotonNetwork.LocalPlayer.NickName : PhotonNetwork.LocalPlayer.NickName.Substring(0, 6);
-            Name.text = $"{_name}({PlayerManage.Wallet})";
-        });
+        PlayerManage.UpdateWallet(showLobbyPlayerInfo);
+        PlayerManage.UpdateProfit(showLobbyPlayerInfo);
 
         this.SetActivePanel(SelectionPanel.name);
 
@@ -292,4 +346,23 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
             PhotonNetwork.JoinLobby(SqlLobby);
     }
 
+    private void showLobbyPlayerInfo()
+    {
+        var _name = PhotonNetwork.LocalPlayer.NickName.Length <= 6 ? PhotonNetwork.LocalPlayer.NickName : PhotonNetwork.LocalPlayer.NickName.Substring(0, 6);
+
+        decimal total = (PlayerManage.win + PlayerManage.loss + PlayerManage.tie);
+        decimal rate = 0;
+        if (total > 0)
+        {
+            rate = Math.Round((PlayerManage.win / total), 4) * 100;
+        }
+
+
+        Name.text = $"暱稱: {_name}\n";
+        Name.text += $"餘額: {PlayerManage.Wallet}\n";
+        Name.text += $"勝: {PlayerManage.win}\n";
+        Name.text += $"敗: {PlayerManage.loss}\n";
+        Name.text += $"平: {PlayerManage.tie}\n";
+        Name.text += $"勝率: {rate.ToString("0.##")}%";
+    }
 }

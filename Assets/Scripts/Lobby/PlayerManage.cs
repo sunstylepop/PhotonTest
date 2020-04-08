@@ -18,7 +18,12 @@ namespace Assets.Scripts.Lobby
         {
             get
             {
-                return (int)PhotonNetwork.LocalPlayer.CustomProperties[PlayerProperty.Money];
+                if(PhotonNetwork.LocalPlayer.CustomProperties.TryGetValue(PlayerProperty.Money, out object m))
+                {
+                    return (int)m;
+                }
+
+                return 0;
             }
             set
             {
@@ -29,6 +34,10 @@ namespace Assets.Scripts.Lobby
                 PhotonNetwork.LocalPlayer.SetCustomProperties(props);
             }
         }
+
+        public static int win { get; set; }
+        public static int loss { get; set; }
+        public static int tie { get; set; }
 
         public static void UpdateWallet(Action callBack = null)
         {
@@ -47,6 +56,37 @@ namespace Assets.Scripts.Lobby
                 callBack?.Invoke();
             }, (errResult) => {
                 Debug.LogError("Get VirtualCurrency fail.");
+            }
+            );
+        }
+
+        public static void UpdateProfit(Action callBack = null)
+        {
+
+            PlayFabClientAPI.GetUserReadOnlyData(new GetUserDataRequest() {
+                Keys = new[] { "win", "loss", "tie" }.ToList()
+            }, userDataResult =>
+            {
+                if (userDataResult.Data.TryGetValue("win", out var winObj))
+                {
+                    PlayerManage.win = int.Parse(winObj.Value);
+                }
+
+                if (userDataResult.Data.TryGetValue("loss", out var lossObj))
+                {
+                    PlayerManage.loss = int.Parse(lossObj.Value);
+                }
+
+                if (userDataResult.Data.TryGetValue("tie", out var tieObj))
+                {
+                    PlayerManage.tie = int.Parse(tieObj.Value);
+                }
+
+
+
+                callBack?.Invoke();
+            }, (errResult) => {
+                Debug.LogError("Get UserReadOnlyData fail.");
             }
             );
         }
