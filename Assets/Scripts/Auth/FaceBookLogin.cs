@@ -38,9 +38,9 @@ namespace Assets.Scripts.Auth
                         {
                             FB.API("/me?fields=id,name,gender,email", HttpMethod.GET, (r) =>
                             {
-                                if (r.ResultDictionary.TryGetValue("id", out string id))
+                                if (r.ResultDictionary.TryGetValue("name", out string name))
                                 {
-                                    PlayFabClientAPI.UpdateUserTitleDisplayName(new UpdateUserTitleDisplayNameRequest { DisplayName = "FB" + id }, null, (ue) =>
+                                    PlayFabClientAPI.UpdateUserTitleDisplayName(new UpdateUserTitleDisplayNameRequest { DisplayName = name }, null, (ue) =>
                                     {
                                         Debug.LogError("update DisplayName fail.");
                                     });

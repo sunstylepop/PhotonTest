@@ -14,6 +14,8 @@ using System.Linq;
 using System.Collections.Generic;
 using Facebook.Unity;
 using Assets.Scripts.Auth;
+using PlayFabFriendInfo = PlayFab.ClientModels.FriendInfo;
+using FriendInfo = Photon.Realtime.FriendInfo;
 
 public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 {
@@ -29,6 +31,18 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
     [Header("Selection Panel")]
     public GameObject SelectionPanel;
     public Text Name;
+
+    [Header("Freind Panel")]
+    public GameObject FriendPanel;
+    public GameObject FriendPrefab;
+    public GameObject FriendContent;
+    public InputField NewFriendNameInput;
+
+    [Header("Bag Panel")]
+    public GameObject BagPanel;
+
+    [Header("Store Panel")]
+    public GameObject StorePanel;
 
     [Header("Statistics Panel")]
     public GameObject StatisticsPanel;
@@ -46,6 +60,7 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
     public GameObject GamePanel;
 
     private List<GameObject> StatisticsListEntries = new List<GameObject>();
+    private Dictionary<string, GameObject> FriendListEntries = new Dictionary<string, GameObject>();
 
     #region UNITY
 
@@ -145,6 +160,18 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
         SetCharacterInQueueRoom();
     }
 
+    public override void OnFriendListUpdate(List<FriendInfo> friendList)
+    {
+        foreach(var f in friendList)
+        {
+            if(FriendListEntries.TryGetValue(f.UserId, out var entry))
+            {
+                entry.GetComponent<FriendPrefab>().SetOnlineState(f.IsOnline);
+            }
+        }
+
+    }
+
     /// <summary> IOnEventCallback Event </summary>
     public void OnEvent(EventData photonEvent)
     {
@@ -203,12 +230,80 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
         JoinGameRoom(RoomLevel.High);
     }
 
-    bool StatisticsLock = false;
+    public void OnFriendButtonClicked()
+    {
+        SetActivePanel(FriendPanel.name);
+        GetAndShowFriendList();
+    }
+
+    public void OnAddNewFriendButtonClicked()
+    {
+        if (string.IsNullOrEmpty(NewFriendNameInput.text)) return;
+
+        PlayFabClientAPI.AddFriend(new AddFriendRequest() { FriendTitleDisplayName = NewFriendNameInput.text },
+            (r) => {
+                Debug.Log("Add Friend result: " + r.Created.ToString());
+                    GetAndShowFriendList();
+            }, (e) => {
+                Debug.LogError("Add Friend fail");
+            });
+    }
+
+    private void GetAndShowFriendList()
+    {
+        //初始化隱藏朋友detail資料
+        var friendInfoBlock = FriendPanel.transform.Find("friendInfoBlock");
+        friendInfoBlock.gameObject.SetActive(false);
+
+        //清除舊的朋友資料
+        foreach (var g in FriendListEntries)
+        {
+            Destroy(g.Value.gameObject);
+        }
+        FriendListEntries.Clear();
+
+        //重新抓取朋友資料
+        PlayFabClientAPI.GetFriendsList(new GetFriendsListRequest(), (x) =>
+        {
+            foreach (var p in x.Friends)
+            {
+                var _name = p.TitleDisplayName.Length <= 6 ? p.TitleDisplayName : p.TitleDisplayName.Substring(0, 6);
+
+                GameObject entry = Instantiate(FriendPrefab);
+                entry.transform.SetParent(FriendContent.transform);
+                entry.transform.localScale = Vector3.one;
+                entry.GetComponent<FriendPrefab>().Initialize(_name, p.FriendPlayFabId, friendInfoBlock, GetAndShowFriendList);
+
+
+                FriendListEntries.Add(p.FriendPlayFabId, entry);
+            }
+
+            if(x.Friends.Count > 0)
+                PhotonNetwork.FindFriends(x.Friends.Select(f => f.FriendPlayFabId).ToArray());
+
+        }, (e) =>
+        {
+            Debug.LogError("Get FriendsList fail");
+        });
+    }
+
+    public void OnBagButtonClicked()
+    {
+        SetActivePanel(BagPanel.name);
+    }
+
+    public void OnStoreButtonClicked()
+    {
+        SetActivePanel(StorePanel.name);
+    }
+
     public void OnStatisticsButtonClicked()
     {
-        if (StatisticsLock) return;
-
-        StatisticsLock = true;
+        foreach (var g in StatisticsListEntries)
+        {
+            Destroy(g.gameObject);
+        }
+        StatisticsListEntries.Clear();
 
         PlayFabClientAPI.GetLeaderboard(new GetLeaderboardRequest() { StatisticName = "PlayerHighScore", MaxResultsCount = 10 }, (boardResult) =>
         {
@@ -231,24 +326,16 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
                 StatisticsListEntries.Add(entry);
             }
 
-            SetActivePanel(StatisticsPanel.name);
-            StatisticsLock = false;
-
         }, (error) =>
         {
             Debug.LogError("Get Leaderboard fail");
-            StatisticsLock = false;
         });
+
+        SetActivePanel(StatisticsPanel.name);
     }
 
-    public void OnLeaveStatisticsButtonClicked()
+    public void OnBackToLobbyButtonClicked()
     {
-        foreach (var g in StatisticsListEntries)
-        {
-            Destroy(g.gameObject);
-        }
-        StatisticsListEntries.Clear();
-
         SetActivePanel(SelectionPanel.name);
     }
 
@@ -299,6 +386,9 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
         QueueRoomPanel.SetActive(activePanel.Equals(QueueRoomPanel.name));
         GamePanel.SetActive(activePanel.Equals(GamePanel.name));
         StatisticsPanel.SetActive(activePanel.Equals(StatisticsPanel.name));
+        FriendPanel.SetActive(activePanel.Equals(FriendPanel.name));
+        BagPanel.SetActive(activePanel.Equals(BagPanel.name));
+        StorePanel.SetActive(activePanel.Equals(StorePanel.name));
     }
 
     private void SetCharacterInQueueRoom()
