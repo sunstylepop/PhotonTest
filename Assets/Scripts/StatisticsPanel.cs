@@ -71,7 +71,7 @@ public class StatisticsPanel : MonoBehaviour, IPanel
 
         }, (error) =>
         {
-            Debug.LogError("Get Leaderboard fail");
+            ModalHelper.WarningMessage("Get Leaderboard fail");
         });
 
     }

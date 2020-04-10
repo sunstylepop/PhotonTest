@@ -1,4 +1,5 @@
-﻿using Assets.Scripts.Auth;
+﻿using Assets.Scripts;
+using Assets.Scripts.Auth;
 using Photon.Pun;
 using Photon.Realtime;
 using PlayFab;
@@ -43,7 +44,7 @@ public class Loginer : MonoBehaviour
         LoginMsg.text = "Auth Fail";
 
         if(error != null)
-            Debug.LogError("Auth Fail" + error.ErrorMessage);
+            ModalHelper.WarningMessage("Auth Fail" + error.ErrorMessage);
     }
 
     private void AuthSuccessCallback(string UserID)
@@ -66,7 +67,7 @@ public class Loginer : MonoBehaviour
         (xe) =>
         {
             LoginMsg.text = "Login Fail";
-            Debug.LogError("Photon Authentication fail.");
+            ModalHelper.WarningMessage("Photon Authentication fail.");
         });
     }
 

@@ -22,7 +22,7 @@ namespace Assets.Scripts.Auth
                 {
                     PlayFabClientAPI.UpdateUserTitleDisplayName(new UpdateUserTitleDisplayNameRequest { DisplayName = Identifier.Substring(0, 6) }, null, (ue) =>
                     {
-                        Debug.LogError("update DisplayName fail.");
+                        ModalHelper.WarningMessage("update DisplayName fail.");
                     });
                 }
 
@@ -38,7 +38,7 @@ namespace Assets.Scripts.Auth
                 {
                     PlayFabClientAPI.UpdateUserTitleDisplayName(new UpdateUserTitleDisplayNameRequest { DisplayName = Identifier.Substring(0, 6) }, null, (ue) =>
                     {
-                        Debug.LogError("update DisplayName fail.");
+                        ModalHelper.WarningMessage("update DisplayName fail.");
                     });
                 }
 
@@ -55,7 +55,7 @@ namespace Assets.Scripts.Auth
                 {
                     PlayFabClientAPI.UpdateUserTitleDisplayName(new UpdateUserTitleDisplayNameRequest { DisplayName = Identifier.Substring(0, 6) }, null, (ue) =>
                     {
-                        Debug.LogError("update DisplayName fail.");
+                        ModalHelper.WarningMessage("update DisplayName fail.");
                     });
                 }
 

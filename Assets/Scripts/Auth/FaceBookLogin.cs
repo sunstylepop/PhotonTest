@@ -24,7 +24,7 @@ namespace Assets.Scripts.Auth
                 else if (!string.IsNullOrEmpty(result.Error))
                 {
                     AuthFailCallback(null);
-                    Debug.LogError("FaceBookLogin fail: " + result.Error);
+                    ModalHelper.WarningMessage("FaceBookLogin fail: " + result.Error);
                 }
                 else
                 {
@@ -42,7 +42,7 @@ namespace Assets.Scripts.Auth
                                 {
                                     PlayFabClientAPI.UpdateUserTitleDisplayName(new UpdateUserTitleDisplayNameRequest { DisplayName = name }, null, (ue) =>
                                     {
-                                        Debug.LogError("update DisplayName fail.");
+                                        ModalHelper.WarningMessage("update DisplayName fail.");
                                     });
                                 }
 

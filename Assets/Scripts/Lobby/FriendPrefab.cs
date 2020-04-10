@@ -100,7 +100,7 @@ public class FriendPrefab : MonoBehaviour
                 showDetail();
 
             }, (e) => {
-                Debug.LogError("Get UserDataRequest fail.");
+                ModalHelper.WarningMessage("Get UserDataRequest fail.");
             });
 
             return;
@@ -115,7 +115,7 @@ public class FriendPrefab : MonoBehaviour
         PlayFabClientAPI.RemoveFriend(new PlayFab.ClientModels.RemoveFriendRequest() { FriendPlayFabId = UserID }, (r) => {
             ReGetFriendFunc?.Invoke();
         }, (e) => {
-            Debug.LogError("RemoveFriend fail.");
+            ModalHelper.WarningMessage("RemoveFriend fail.");
         });
     }
 

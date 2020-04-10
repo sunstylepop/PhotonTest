@@ -49,10 +49,10 @@ public class FreindPanel : MonoBehaviour, IPanel
 
         PlayFabClientAPI.AddFriend(new AddFriendRequest() { FriendTitleDisplayName = NewFriendNameInput.text },
             (r) => {
-                Debug.Log("Add Friend result: " + r.Created.ToString());
+                ModalHelper.WarningMessage("Add Friend result: " + r.Created.ToString());
                 GetAndShowFriendList();
             }, (e) => {
-                Debug.LogError("Add Friend fail");
+                ModalHelper.WarningMessage("Add Friend fail");
             });
     }
 
@@ -111,7 +111,7 @@ public class FreindPanel : MonoBehaviour, IPanel
 
         }, (e) =>
         {
-            Debug.LogError("Get FriendsList fail");
+            ModalHelper.WarningMessage("Get FriendsList fail");
         });
     }
 

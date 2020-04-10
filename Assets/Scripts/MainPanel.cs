@@ -12,7 +12,6 @@ using System.Linq;
 using System.Collections.Generic;
 using Facebook.Unity;
 
-
 public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 {
     [Header("Login Panel")]
@@ -39,6 +38,9 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
     [Header("Game Panel")]
     public GameObject GamePanelObj;
 
+    [Header("Modal Panel")]
+    public GameObject ModalObj;
+
 
     private Dictionary<SysPanel, GameObject> _sysPanel = new Dictionary<SysPanel, GameObject>();
     private RoomLevel SelectedRoomLevel { get; set; }
@@ -64,6 +66,8 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
         _sysPanel.Add(SysPanel.FriendPanel, FriendPanelObj);
         _sysPanel.Add(SysPanel.BagPanel, BagPanelObj);
         _sysPanel.Add(SysPanel.StorePanel, StorePanelObj);
+
+        ModalHelper.ModalInit(ModalObj);
     }
 
 #endregion
@@ -94,7 +98,7 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
                 ConnectToLobby();
             }
         }, (errResult) => {
-            Debug.LogError("Get UserDataRequest fail.");
+            ModalHelper.WarningMessage("Get UserDataRequest fail. at OnConnectedToMaster.");
         });
     }
 
@@ -214,7 +218,7 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 
         if (!RoomManage.CanOpenRoom(level, PlayerManage.Wallet))
         {
-            Debug.LogError("You Don't have enough money");
+            ModalHelper.WarningMessage("You Don't have enough money.");
             return;
         }
 

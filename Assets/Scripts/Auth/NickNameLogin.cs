@@ -25,7 +25,7 @@ namespace Assets.Scripts.Auth
                         var xxx = xe;
                     }, (ue) =>
                     {
-                        Debug.LogError("update DisplayName fail.");
+                        ModalHelper.WarningMessage("update DisplayName fail.");
                     });
                 }
 

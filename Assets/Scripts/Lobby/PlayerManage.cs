@@ -50,12 +50,12 @@ namespace Assets.Scripts.Lobby
                 }
                 else
                 {
-                    Debug.LogError("Not found PI Currency.");
+                    ModalHelper.WarningMessage("Not found PI Currency.");
                 }
 
                 callBack?.Invoke();
             }, (errResult) => {
-                Debug.LogError("Get VirtualCurrency fail.");
+                ModalHelper.WarningMessage("Get VirtualCurrency fail.");
             }
             );
         }
@@ -86,7 +86,7 @@ namespace Assets.Scripts.Lobby
 
                 callBack?.Invoke();
             }, (errResult) => {
-                Debug.LogError("Get UserReadOnlyData fail.");
+                ModalHelper.WarningMessage("Get UserReadOnlyData fail.");
             }
             );
         }
