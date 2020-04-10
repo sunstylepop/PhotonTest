@@ -119,8 +119,4 @@ public class FriendPrefab : MonoBehaviour
         });
     }
 
-    public void OnInviteFriendButtonClicked()
-    {
-
-    }
 }

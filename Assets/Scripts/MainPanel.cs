@@ -4,63 +4,46 @@ using Photon.Realtime;
 using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine;
-using UnityEngine.UI;
 using ExitGames.Client.Photon;
 using Assets.Scripts.Game.BlackJack.Model;
 using Assets.Scripts.Lobby;
 using System;
-using Assets.Scripts.Game.BlackJack;
 using System.Linq;
 using System.Collections.Generic;
 using Facebook.Unity;
-using Assets.Scripts.Auth;
-using PlayFabFriendInfo = PlayFab.ClientModels.FriendInfo;
-using FriendInfo = Photon.Realtime.FriendInfo;
+
 
 public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 {
-    private RoomLevel SelectedRoomLevel { get; set; }
-    private TypedLobby SqlLobby = new TypedLobby("myLobby", LobbyType.SqlLobby);
-    private bool rePlay = false;
-
-
     [Header("Login Panel")]
-    public GameObject LoginPanel;
-    public InputField PlayerNameInput;
+    public GameObject LoginPanelObj;
 
     [Header("Selection Panel")]
-    public GameObject SelectionPanel;
-    public Text Name;
+    public GameObject SelectionPanelObj;
 
     [Header("Freind Panel")]
-    public GameObject FriendPanel;
-    public GameObject FriendPrefab;
-    public GameObject FriendContent;
-    public InputField NewFriendNameInput;
+    public GameObject FriendPanelObj;
 
     [Header("Bag Panel")]
-    public GameObject BagPanel;
+    public GameObject BagPanelObj;
 
     [Header("Store Panel")]
-    public GameObject StorePanel;
+    public GameObject StorePanelObj;
 
     [Header("Statistics Panel")]
-    public GameObject StatisticsPanel;
-    public GameObject StatisticsContent;
-    public GameObject StatisticsPrefab;
+    public GameObject StatisticsPanelObj;
 
     [Header("Queue Room Panel")]
-    public GameObject QueueRoomPanel;
-    public GameObject Character1;
-    public GameObject Character2;
-    public GameObject Character3;
-    public GameObject Character4;
+    public GameObject QueueRoomPanelObj;
 
     [Header("Game Panel")]
-    public GameObject GamePanel;
+    public GameObject GamePanelObj;
 
-    private List<GameObject> StatisticsListEntries = new List<GameObject>();
-    private Dictionary<string, GameObject> FriendListEntries = new Dictionary<string, GameObject>();
+
+    private Dictionary<SysPanel, GameObject> _sysPanel = new Dictionary<SysPanel, GameObject>();
+    private RoomLevel SelectedRoomLevel { get; set; }
+    private TypedLobby SqlLobby = new TypedLobby("myLobby", LobbyType.SqlLobby);
+
 
     #region UNITY
 
@@ -73,7 +56,14 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
             //}
         });
 
-        PlayerNameInput.text = "MM2";
+        _sysPanel.Add(SysPanel.LoginPanel, LoginPanelObj);
+        _sysPanel.Add(SysPanel.SelectionPanel, SelectionPanelObj);
+        _sysPanel.Add(SysPanel.QueueRoomPanel, QueueRoomPanelObj);
+        _sysPanel.Add(SysPanel.GamePanel, GamePanelObj);
+        _sysPanel.Add(SysPanel.StatisticsPanel, StatisticsPanelObj);
+        _sysPanel.Add(SysPanel.FriendPanel, FriendPanelObj);
+        _sysPanel.Add(SysPanel.BagPanel, BagPanelObj);
+        _sysPanel.Add(SysPanel.StorePanel, StorePanelObj);
     }
 
 #endregion
@@ -82,10 +72,9 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 
     public override void OnDisconnected(DisconnectCause cause)
     {
-        this.SetActivePanel(LoginPanel.name);
+        SetActivePanel(SysPanel.LoginPanel);
 
-        Loginer _loginer = LoginPanel.transform.Find("LoginMsg").GetComponent<Loginer>();
-        _loginer.SetLoginMsg("Disconnected");
+        this.LoginPanelObj.GetComponent<LoginPanel>().ResetLoginMsg();
     }
 
     public override void OnConnectedToMaster()
@@ -111,13 +100,13 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 
     public override void OnCreateRoomFailed(short returnCode, string message)
     {
-        SetActivePanel(SelectionPanel.name);
+        SetActivePanel(SysPanel.SelectionPanel);
     }
 
     public override void OnJoinRoomFailed(short returnCode, string message)
     {
         ConnectToLobby();
-        SetActivePanel(SelectionPanel.name);
+        SetActivePanel(SysPanel.SelectionPanel);
     }
 
     public override void OnJoinRandomFailed(short returnCode, string message)
@@ -138,38 +127,31 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 
     public override void OnJoinedRoom()
     {
-        SetActivePanel(QueueRoomPanel.name);
-
-        SetCharacterInQueueRoom();
+        SetActivePanel(SysPanel.QueueRoomPanel);
     }
 
     public override void OnLeftRoom()
     {
-        SetCharacterInQueueRoom();
-
-        SetActivePanel(SelectionPanel.name);
+        SetActivePanel(SysPanel.SelectionPanel);
     }
 
     public override void OnPlayerEnteredRoom(Player newPlayer)
     {
-        SetCharacterInQueueRoom();
+        QueueRoomPanelObj.GetComponent<QueueRoomPanel>().SetCharacterInQueueRoom();
     }
 
     public override void OnPlayerLeftRoom(Player otherPlayer)
     {
-        SetCharacterInQueueRoom();
+        QueueRoomPanelObj.GetComponent<QueueRoomPanel>().SetCharacterInQueueRoom();
     }
 
-    public override void OnFriendListUpdate(List<FriendInfo> friendList)
+    public override void OnFriendListUpdate(List<Photon.Realtime.FriendInfo> friendList)
     {
-        foreach(var f in friendList)
+        if (FriendPanelObj.activeInHierarchy)
         {
-            if(FriendListEntries.TryGetValue(f.UserId, out var entry))
-            {
-                entry.GetComponent<FriendPrefab>().SetOnlineState(f.IsOnline);
-            }
+            var _freindPanel = FriendPanelObj.GetComponent<FreindPanel>();
+            _freindPanel.SetOnlineState(friendList);
         }
-
     }
 
     /// <summary> IOnEventCallback Event </summary>
@@ -177,12 +159,12 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
     {
         if (new[] { BlackJackServerEvent.Start, BlackJackServerEvent.ReJoin }.Contains((BlackJackServerEvent)photonEvent.Code))
         {
-            SetActivePanel(GamePanel.name);
+            SetActivePanel(SysPanel.GamePanel);
         }
 
-        if (GamePanel.activeInHierarchy)
+        if (GamePanelObj.activeInHierarchy)
         {
-            var _gamePanel = GamePanel.GetComponent<GamePanel>();
+            var _gamePanel = GamePanelObj.GetComponent<GamePanel>();
             _gamePanel.Listens(photonEvent);
         }
     }
@@ -190,13 +172,47 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 #endregion
 
 
-#region UI CALLBACKS
 
-    private void JoinGameRoom(RoomLevel level)
+    public void SetActivePanel(SysPanel activePanel)
+    {
+        foreach (var obj in _sysPanel.Values)
+        {
+            if (obj != null) obj.SetActive(false);
+        }
+
+        if(_sysPanel.TryGetValue(activePanel, out GameObject _obj) && _obj != null)
+        {
+            _obj.SetActive(true);
+
+            var _panel = _obj.GetComponent<IPanel>();
+            _panel?.Init();
+        }
+    }
+
+    private void ConnectToLobby()
+    {
+        var _panel = SelectionPanelObj.GetComponent<SelectionPanel>();
+        Action act = _panel.showLobbyPlayerInfo;
+        PlayerManage.UpdateWallet(act);
+        PlayerManage.UpdateProfit(act);
+
+        SetActivePanel(SysPanel.SelectionPanel);
+
+
+        if (GamePanel.rePlay)
+        {
+            GamePanel.rePlay = false;
+            JoinGameRoom(SelectedRoomLevel);
+        }
+        else if (!PhotonNetwork.InLobby)
+            PhotonNetwork.JoinLobby(SqlLobby);
+    }
+
+    public void JoinGameRoom(RoomLevel level)
     {
         SelectedRoomLevel = level;
-        
-        if(!RoomManage.CanOpenRoom(level, PlayerManage.Wallet))
+
+        if (!RoomManage.CanOpenRoom(level, PlayerManage.Wallet))
         {
             Debug.LogError("You Don't have enough money");
             return;
@@ -208,251 +224,4 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 
     }
 
-    public void OnRePlayClicked()
-    {
-        rePlay = true;
-
-        PhotonNetwork.LeaveRoom();
-    }
-
-    public void OnJoinLowRoomButtonClicked()
-    {
-        JoinGameRoom(RoomLevel.Low);
-    }
-
-    public void OnJoinMidRoomButtonClicked()
-    {
-        JoinGameRoom(RoomLevel.Mid);
-    }
-
-    public void OnJoinHighRoomButtonClicked()
-    {
-        JoinGameRoom(RoomLevel.High);
-    }
-
-    public void OnFriendButtonClicked()
-    {
-        SetActivePanel(FriendPanel.name);
-        GetAndShowFriendList();
-    }
-
-    public void OnAddNewFriendButtonClicked()
-    {
-        if (string.IsNullOrEmpty(NewFriendNameInput.text)) return;
-
-        PlayFabClientAPI.AddFriend(new AddFriendRequest() { FriendTitleDisplayName = NewFriendNameInput.text },
-            (r) => {
-                Debug.Log("Add Friend result: " + r.Created.ToString());
-                    GetAndShowFriendList();
-            }, (e) => {
-                Debug.LogError("Add Friend fail");
-            });
-    }
-
-    private void GetAndShowFriendList()
-    {
-        //初始化隱藏朋友detail資料
-        var friendInfoBlock = FriendPanel.transform.Find("friendInfoBlock");
-        friendInfoBlock.gameObject.SetActive(false);
-
-        //清除舊的朋友資料
-        foreach (var g in FriendListEntries)
-        {
-            Destroy(g.Value.gameObject);
-        }
-        FriendListEntries.Clear();
-
-        //重新抓取朋友資料
-        PlayFabClientAPI.GetFriendsList(new GetFriendsListRequest(), (x) =>
-        {
-            foreach (var p in x.Friends)
-            {
-                var _name = p.TitleDisplayName.Length <= 6 ? p.TitleDisplayName : p.TitleDisplayName.Substring(0, 6);
-
-                GameObject entry = Instantiate(FriendPrefab);
-                entry.transform.SetParent(FriendContent.transform);
-                entry.transform.localScale = Vector3.one;
-                entry.GetComponent<FriendPrefab>().Initialize(_name, p.FriendPlayFabId, friendInfoBlock, GetAndShowFriendList);
-
-
-                FriendListEntries.Add(p.FriendPlayFabId, entry);
-            }
-
-            if(x.Friends.Count > 0)
-                PhotonNetwork.FindFriends(x.Friends.Select(f => f.FriendPlayFabId).ToArray());
-
-        }, (e) =>
-        {
-            Debug.LogError("Get FriendsList fail");
-        });
-    }
-
-    public void OnBagButtonClicked()
-    {
-        SetActivePanel(BagPanel.name);
-    }
-
-    public void OnStoreButtonClicked()
-    {
-        SetActivePanel(StorePanel.name);
-    }
-
-    public void OnStatisticsButtonClicked()
-    {
-        foreach (var g in StatisticsListEntries)
-        {
-            Destroy(g.gameObject);
-        }
-        StatisticsListEntries.Clear();
-
-        PlayFabClientAPI.GetLeaderboard(new GetLeaderboardRequest() { StatisticName = "PlayerHighScore", MaxResultsCount = 10 }, (boardResult) =>
-        {
-            int i = 0;
-            foreach(var b in boardResult.Leaderboard)
-            {
-                var _name = b.DisplayName.Length <= 6 ? b.DisplayName : b.DisplayName.Substring(0, 6);
-
-                GameObject entry = Instantiate(StatisticsPrefab);
-                entry.transform.SetParent(StatisticsContent.transform);
-                entry.transform.localScale = Vector3.one;
-                entry.GetComponent<RowPrefab>().Initialize(++i, _name, b.StatValue);
-
-                if (b.PlayFabId == PhotonNetwork.LocalPlayer.UserId)
-                {
-                    var img = entry.GetComponent<Image>();
-                    img.color = new Color(1, 0.5137255f, 0.5137255f, 0.3921569f);
-                }
-
-                StatisticsListEntries.Add(entry);
-            }
-
-        }, (error) =>
-        {
-            Debug.LogError("Get Leaderboard fail");
-        });
-
-        SetActivePanel(StatisticsPanel.name);
-    }
-
-    public void OnBackToLobbyButtonClicked()
-    {
-        SetActivePanel(SelectionPanel.name);
-    }
-
-    public void OnLeaveQueueRoomButtonClicked()
-    {
-        PhotonNetwork.LeaveRoom();
-    }
-
-    public void OnLeaveGameClicked()
-    {
-        PhotonNetwork.LeaveRoom();
-    }
-
-    public void OnLogoutClicked()
-    {
-        PhotonNetwork.Disconnect();
-    }
-
-    public void OnGuestLoginButtonClicked()
-    {
-        Login<GuestLogin>();
-    }
-
-    public void OnFBLoginButtonClicked()
-    {
-        Login<FaceBookLogin>();
-    }
-
-    public void OnLoginButtonClicked()
-    {
-        string playerName = PlayerNameInput.text;
-
-        Login<NickNameLogin>(playerName);
-    }
-
-    private void Login<T>(string nickName = null) where T : IAuth, new()
-    {
-        Loginer _loginer = LoginPanel.transform.Find("LoginMsg").GetComponent<Loginer>();
-        _loginer.Login<T>(nickName);
-    }
-
-#endregion
-
-    private void SetActivePanel(string activePanel)
-    {
-        LoginPanel.SetActive(activePanel.Equals(LoginPanel.name));
-        SelectionPanel.SetActive(activePanel.Equals(SelectionPanel.name));
-        QueueRoomPanel.SetActive(activePanel.Equals(QueueRoomPanel.name));
-        GamePanel.SetActive(activePanel.Equals(GamePanel.name));
-        StatisticsPanel.SetActive(activePanel.Equals(StatisticsPanel.name));
-        FriendPanel.SetActive(activePanel.Equals(FriendPanel.name));
-        BagPanel.SetActive(activePanel.Equals(BagPanel.name));
-        StorePanel.SetActive(activePanel.Equals(StorePanel.name));
-    }
-
-    private void SetCharacterInQueueRoom()
-    {
-        Character1.SetActive(false);
-        Character2.SetActive(false);
-        Character3.SetActive(false);
-        Character4.SetActive(false);
-
-        Action<GameObject, string> SetCharacter = (c, info) => { 
-            var _text = c.transform.Find("Text").GetComponent<Text>();
-            _text.text = info;
-
-            c.SetActive(true);
-        };
-
-        int i = 0;
-        foreach(var _p in PhotonNetwork.PlayerList)
-        {
-            var info = $"{_p.NickName}({(int)_p.CustomProperties[PlayerProperty.Money]})";
-            if (i == 0) SetCharacter(Character1, info);
-            if (i == 1) SetCharacter(Character2, info);
-            if (i == 2) SetCharacter(Character3, info);
-            if (i == 3) SetCharacter(Character4, info);
-
-            i++;
-        }
-
-    }
-
-    public void ConnectToLobby()
-    {
-        PlayerManage.UpdateWallet(showLobbyPlayerInfo);
-        PlayerManage.UpdateProfit(showLobbyPlayerInfo);
-
-        this.SetActivePanel(SelectionPanel.name);
-
-
-        if (rePlay)
-        {
-            rePlay = false;
-            JoinGameRoom(SelectedRoomLevel);
-        }
-        else if (!PhotonNetwork.InLobby)
-            PhotonNetwork.JoinLobby(SqlLobby);
-    }
-
-    private void showLobbyPlayerInfo()
-    {
-        var _name = PhotonNetwork.LocalPlayer.NickName.Length <= 6 ? PhotonNetwork.LocalPlayer.NickName : PhotonNetwork.LocalPlayer.NickName.Substring(0, 6);
-
-        decimal total = (PlayerManage.win + PlayerManage.loss + PlayerManage.tie);
-        decimal rate = 0;
-        if (total > 0)
-        {
-            rate = Math.Round((PlayerManage.win / total), 4) * 100;
-        }
-
-
-        Name.text = $"暱稱: {_name}\n";
-        Name.text += $"餘額: {PlayerManage.Wallet}\n";
-        Name.text += $"勝: {PlayerManage.win}\n";
-        Name.text += $"敗: {PlayerManage.loss}\n";
-        Name.text += $"平: {PlayerManage.tie}\n";
-        Name.text += $"勝率: {rate.ToString("0.##")}%";
-    }
 }

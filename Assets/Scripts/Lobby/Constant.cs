@@ -15,4 +15,16 @@ namespace Assets.Scripts
     {
         public const string Money = "Money";
     }
+
+    public enum SysPanel
+    {
+        LoginPanel,
+        SelectionPanel,
+        QueueRoomPanel,
+        GamePanel,
+        StatisticsPanel,
+        FriendPanel,
+        BagPanel,
+        StorePanel
+    }
 }

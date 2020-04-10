@@ -15,6 +15,7 @@ public class GamePanel : MonoBehaviour
     private Dictionary<int, PlayerInfo> InGamePlayer { get; set; }
     private int MyLocation = 0;
     private PlayerInfo MyPlayerInfo { get; set; }
+    public static bool rePlay { get; set; }
 
 
 
@@ -129,7 +130,10 @@ public class GamePanel : MonoBehaviour
 
 
 
-
+    public void OnLeaveGameClicked()
+    {
+        PhotonNetwork.LeaveRoom();
+    }
 
     public void OnGetCardButtonClicked()
     {
@@ -141,7 +145,12 @@ public class GamePanel : MonoBehaviour
         PhotonNetwork.RaiseEvent((byte)BlackJackClientEvent.Pass, null, null, SendOptions.SendReliable);
     }
 
+    public void OnRePlayClicked()
+    {
+        rePlay = true;
 
+        PhotonNetwork.LeaveRoom();
+    }
 
 
 

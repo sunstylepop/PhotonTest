@@ -1,7 +1,7 @@
 ﻿
 namespace Assets.Scripts
 {
-    enum RoomLevel
+    public enum RoomLevel
     {
         Low = 0,
         Mid,
