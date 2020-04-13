@@ -88,6 +88,7 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
             PlayFabId = PhotonNetwork.LocalPlayer.UserId,
             Keys = new[] { "LastGameRoom" }.ToList()
         }, (userDataResult) => {
+            //判斷是否有遊戲尚未結束、未結束連回該遊戲房間
             var haveObj = userDataResult.Data.TryGetValue("LastGameRoom", out var userDataRecord);
             if(haveObj && !string.IsNullOrEmpty(userDataRecord.Value))
             {
@@ -195,11 +196,6 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 
     private void ConnectToLobby()
     {
-        var _panel = SelectionPanelObj.GetComponent<SelectionPanel>();
-        Action act = _panel.showLobbyPlayerInfo;
-        PlayerManage.UpdateWallet(act);
-        PlayerManage.UpdateProfit(act);
-
         SetActivePanel(SysPanel.SelectionPanel);
 
 

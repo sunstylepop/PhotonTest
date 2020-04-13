@@ -39,6 +39,9 @@ namespace Assets.Scripts.Lobby
         public static int loss { get; set; }
         public static int tie { get; set; }
 
+        public static Dictionary<string, CatalogItem> AllStoreItem { get; set; }
+
+
         public static void UpdateWallet(Action callBack = null)
         {
             //取餘額
@@ -90,6 +93,18 @@ namespace Assets.Scripts.Lobby
             }
             );
         }
+
+        public static void GetAllStroeItem()
+        {
+            PlayFabClientAPI.GetCatalogItems(new GetCatalogItemsRequest() { CatalogVersion = "main" }, (r) =>
+            {
+                AllStoreItem = r.Catalog.ToDictionary(k => k.ItemId, v => v);
+            }, (e) =>
+            {
+                ModalHelper.WarningMessage("Get CatalogItems fail.");
+            });
+        }
+
     }
 
     public static class PlayerExtension

@@ -26,7 +26,9 @@ public class SelectionPanel : MonoBehaviour, IPanel
 
     public void Init()
     {
-
+        PlayerManage.GetAllStroeItem();                 //取得所有物品
+        PlayerManage.UpdateWallet(showLobbyPlayerInfo); //更新金額
+        PlayerManage.UpdateProfit(showLobbyPlayerInfo); //更新個人資料
     }
 
     public void OnLogoutButtonClicked()
@@ -83,22 +85,6 @@ public class SelectionPanel : MonoBehaviour, IPanel
 
     public void OnStoreButtonClicked()
     {
-        //PlayFabClientAPI.GetCatalogItems(new GetCatalogItemsRequest() { CatalogVersion = "main" }, (r) =>
-        //{
-        //    var xx = r;
-        //}, (e) =>
-        //{
-
-        //});
-
-        //PlayFabClientAPI.PurchaseItem(new PurchaseItemRequest() { CatalogVersion = "main", ItemId = "TwoRndPack", VirtualCurrency = "PI", Price = 1 }, (r) =>
-        //{
-        //    var xx = r;
-        //}, (e) =>
-        //{
-        //    Debug.LogError(e.ErrorMessage);
-        //});
-
         GetComponentInParent<MainPanel>().SetActivePanel(SysPanel.StorePanel);
     }
 
@@ -130,4 +116,5 @@ public class SelectionPanel : MonoBehaviour, IPanel
     {
         GetComponentInParent<MainPanel>().JoinGameRoom(level);
     }
+
 }

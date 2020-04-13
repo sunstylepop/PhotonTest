@@ -36,7 +36,7 @@ namespace Assets.Scripts
 
         public static void ConfirmMessage(string content, Action applyAct = null, Action cancleAct = null)
         {
-            SetModal("Confirm", content, true, false, false, null, applyAct, cancleAct);
+            SetModal("Confirm", content, false, true, true, null, applyAct, cancleAct);
         }
 
 
