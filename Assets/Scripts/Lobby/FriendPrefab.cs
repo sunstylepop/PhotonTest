@@ -112,10 +112,15 @@ public class FriendPrefab : MonoBehaviour
 
     public void OnRemoveClicked()
     {
+        ModalHelper.ConfirmMessage("確定要刪除此好友?", RemoveFriend);
+    }
+
+    private void RemoveFriend()
+    {
         PlayFabClientAPI.RemoveFriend(new PlayFab.ClientModels.RemoveFriendRequest() { FriendPlayFabId = UserID }, (r) => {
-            ReGetFriendFunc?.Invoke();
+            ModalHelper.WarningMessage("刪除成功", ReGetFriendFunc);
         }, (e) => {
-            ModalHelper.WarningMessage("RemoveFriend fail.");
+            ModalHelper.WarningMessage("操作失敗");
         });
     }
 

@@ -41,12 +41,16 @@ namespace Assets.Scripts.Lobby
 
         public static Dictionary<string, CatalogItem> AllStoreItem { get; set; }
 
+        public static List<ItemInstance> Inventory { get; set; }
 
-        public static void UpdateWallet(Action callBack = null)
+
+        public static void UpdateInventory(Action callBack = null)
         {
             //取餘額
             PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(), userInventoryResult =>
             {
+                Inventory = userInventoryResult.Inventory;
+
                 if (userInventoryResult.VirtualCurrency.TryGetValue("PI", out int _myMoney))
                 {
                     PlayerManage.Wallet = _myMoney;
@@ -59,8 +63,7 @@ namespace Assets.Scripts.Lobby
                 callBack?.Invoke();
             }, (errResult) => {
                 ModalHelper.WarningMessage("Get VirtualCurrency fail.");
-            }
-            );
+            });
         }
 
         public static void UpdateProfit(Action callBack = null)

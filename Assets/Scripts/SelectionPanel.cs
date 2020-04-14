@@ -27,7 +27,7 @@ public class SelectionPanel : MonoBehaviour, IPanel
     public void Init()
     {
         PlayerManage.GetAllStroeItem();                 //取得所有物品
-        PlayerManage.UpdateWallet(showLobbyPlayerInfo); //更新金額
+        PlayerManage.UpdateInventory(showLobbyPlayerInfo); //更新金額
         PlayerManage.UpdateProfit(showLobbyPlayerInfo); //更新個人資料
     }
 
@@ -63,23 +63,6 @@ public class SelectionPanel : MonoBehaviour, IPanel
 
     public void OnBagButtonClicked()
     {
-        //PlayFabClientAPI.UnlockContainerInstance(new UnlockContainerInstanceRequest() { CatalogVersion = "main", ContainerItemInstanceId = "15E57E5032FA17BE", KeyItemInstanceId = "F38E65D447661047" }, (r) =>
-        //{
-        //    var xx = r;
-        //}, (e) =>
-        //{
-        //    Debug.LogError(e.ErrorMessage);
-        //});
-
-
-        //PlayFabClientAPI.ConsumeItem(new ConsumeItemRequest() { ItemInstanceId = "48FE0599EA0FEE36", ConsumeCount = 1 }, (r) =>
-        //{
-        //    var xx = r;
-        //}, (e) =>
-        //{
-        //    Debug.LogError(e.ErrorMessage);
-        //});
-
         GetComponentInParent<MainPanel>().SetActivePanel(SysPanel.BagPanel);
     }
 
