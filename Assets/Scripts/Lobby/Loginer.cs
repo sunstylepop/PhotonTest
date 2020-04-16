@@ -1,5 +1,6 @@
 ﻿using Assets.Scripts;
 using Assets.Scripts.Auth;
+using Assets.Scripts.Lobby;
 using Photon.Pun;
 using Photon.Realtime;
 using PlayFab;
@@ -50,6 +51,9 @@ public class Loginer : MonoBehaviour
     private void AuthSuccessCallback(string UserID)
     {
         LoginMsg.text = "Auth Success";
+
+        SystemManage.GetAllTitleData();                 //取得所有title data
+        SystemManage.GetAllStroeItem();                 //取得所有物品
 
         //使用playfab登入photon
         PlayFabClientAPI.GetPhotonAuthenticationToken(new GetPhotonAuthenticationTokenRequest() { PhotonApplicationId = PhotonNetwork.PhotonServerSettings.AppSettings.AppIdRealtime }, (xr) =>

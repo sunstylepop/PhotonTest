@@ -1,5 +1,4 @@
 ﻿using Assets.Scripts;
-using Assets.Scripts.Game.BlackJack.Model;
 using Photon.Pun;
 using Photon.Realtime;
 using PlayFab;

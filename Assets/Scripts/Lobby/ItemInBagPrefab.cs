@@ -1,5 +1,4 @@
 ﻿using Assets.Scripts;
-using Assets.Scripts.Game.BlackJack.Model;
 using Assets.Scripts.Lobby;
 using Photon.Pun;
 using Photon.Realtime;
@@ -38,7 +37,7 @@ public class ItemInBagPrefab : MonoBehaviour
     {
         _instance = instance;
         _reSearchBag = ReSearchBag;
-        PlayerManage.AllStoreItem.TryGetValue(instance.ItemId, out _catalogItem);
+        SystemManage.AllStoreItem.TryGetValue(instance.ItemId, out _catalogItem);
 
         string consumableMsg = "";
         if (instance.RemainingUses.HasValue)

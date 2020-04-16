@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Assets.Scripts;
-using Assets.Scripts.Game.BlackJack.Common;
 using Newtonsoft.Json;
 using Photon.Hive.Operations;
 using PlayFab;
@@ -41,6 +40,7 @@ namespace Photon.Hive.Plugin.WebHooks
         private int RoundPtr = -1;
         private BlackJackPlayerData Banker { get; set; }
         private Dictionary<string, BlackJackPlayerData> InGamePlayer { get; set; }
+        private BlackJackRoom CurRoomInfo { get; set; }
 
         public override string Name
         {
@@ -90,6 +90,27 @@ namespace Photon.Hive.Plugin.WebHooks
 
 
             info.Cancel();
+        }
+
+        public override void OnCreateGame(ICreateGameCallInfo info)
+        {
+            var FilterName = BlackJackConfig.roomFilter[nameof(BlackJackRoom.ID)].ToString();
+            var RoomID = (int)info.Request.GameProperties[FilterName];
+            var TitleData = PlayFabServerAPI.GetTitleDataAsync(new GetTitleDataRequest() { Keys = new List<string>() { "BlackJackRooms" } }).Result;
+
+            if (TitleData.Result != null && TitleData.Result.Data.TryGetValue("BlackJackRooms", out string RoomJson))
+            {
+                var Rooms = JsonConvert.DeserializeObject<List<BlackJackRoom>>(RoomJson);
+                CurRoomInfo = Rooms.FirstOrDefault(x => x.ID == RoomID);
+
+                if(CurRoomInfo != null)
+                {
+                    info.Continue();
+                    return;
+                }
+            }
+
+            info.Fail();
         }
 
         public override void OnJoin(IJoinGameCallInfo info)
@@ -324,7 +345,7 @@ namespace Photon.Hive.Plugin.WebHooks
 
         private async void SettlementProc()
         {
-            var Antes = (int)PluginHost.CustomGameProperties["C1"];
+            var Antes = CurRoomInfo.Bet;
 
             //計算
             foreach (var _p in InGamePlayer)

@@ -39,7 +39,6 @@ namespace Assets.Scripts.Lobby
         public static int loss { get; set; }
         public static int tie { get; set; }
 
-        public static Dictionary<string, CatalogItem> AllStoreItem { get; set; }
 
         public static List<ItemInstance> Inventory { get; set; }
 
@@ -95,17 +94,6 @@ namespace Assets.Scripts.Lobby
                 ModalHelper.WarningMessage("Get UserReadOnlyData fail.");
             }
             );
-        }
-
-        public static void GetAllStroeItem()
-        {
-            PlayFabClientAPI.GetCatalogItems(new GetCatalogItemsRequest() { CatalogVersion = "main" }, (r) =>
-            {
-                AllStoreItem = r.Catalog.ToDictionary(k => k.ItemId, v => v);
-            }, (e) =>
-            {
-                ModalHelper.WarningMessage("Get CatalogItems fail.");
-            });
         }
 
     }

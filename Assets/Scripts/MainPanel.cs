@@ -5,7 +5,6 @@ using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine;
 using ExitGames.Client.Photon;
-using Assets.Scripts.Game.BlackJack.Model;
 using Assets.Scripts.Lobby;
 using System;
 using System.Linq;
@@ -43,8 +42,6 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 
 
     private Dictionary<SysPanel, GameObject> _sysPanel = new Dictionary<SysPanel, GameObject>();
-    private RoomLevel SelectedRoomLevel { get; set; }
-    private TypedLobby SqlLobby = new TypedLobby("myLobby", LobbyType.SqlLobby);
 
 
     #region UNITY
@@ -89,14 +86,13 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
             Keys = new[] { "LastGameRoom" }.ToList()
         }, (userDataResult) => {
             //判斷是否有遊戲尚未結束、未結束連回該遊戲房間
-            var haveObj = userDataResult.Data.TryGetValue("LastGameRoom", out var userDataRecord);
-            if(haveObj && !string.IsNullOrEmpty(userDataRecord.Value))
+            if(userDataResult.Data.TryGetValue("LastGameRoom", out var LastGameRoom) && !string.IsNullOrEmpty(LastGameRoom.Value))
             {
-                PhotonNetwork.RejoinRoom(userDataRecord.Value);
+                PhotonNetwork.RejoinRoom(LastGameRoom.Value);
             }
             else
             {
-                ConnectToLobby();
+                SetActivePanel(SysPanel.SelectionPanel);
             }
         }, (errResult) => {
             ModalHelper.WarningMessage("Get UserDataRequest fail. at OnConnectedToMaster.");
@@ -110,34 +106,17 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
 
     public override void OnJoinRoomFailed(short returnCode, string message)
     {
-        ConnectToLobby();
         SetActivePanel(SysPanel.SelectionPanel);
     }
 
     public override void OnJoinRandomFailed(short returnCode, string message)
     {
-        string roomName = "Room " + UnityEngine.Random.Range(1000, 10000);
-
-        RoomOptions options = new RoomOptions
-        {
-            MaxPlayers = 4,
-            CustomRoomProperties = RoomManage.GetRoomProperty(SelectedRoomLevel),
-            CustomRoomPropertiesForLobby = RoomManage.GetRoomPropertiesForLobby(),
-            PlayerTtl = -1, //永久等待玩家重新連入
-            Plugins = new string[] { "BlackJackPlugin" }
-        };
-
-        PhotonNetwork.CreateRoom(roomName, options, SqlLobby);
+        this.SelectionPanelObj.GetComponent<SelectionPanel>().CreateGameRoom();
     }
 
     public override void OnJoinedRoom()
     {
         SetActivePanel(SysPanel.QueueRoomPanel);
-    }
-
-    public override void OnLeftRoom()
-    {
-        SetActivePanel(SysPanel.SelectionPanel);
     }
 
     public override void OnPlayerEnteredRoom(Player newPlayer)
@@ -192,36 +171,6 @@ public class MainPanel : MonoBehaviourPunCallbacks, IOnEventCallback
             var _panel = _obj.GetComponent<IPanel>();
             _panel?.Init();
         }
-    }
-
-    private void ConnectToLobby()
-    {
-        SetActivePanel(SysPanel.SelectionPanel);
-
-
-        if (GamePanel.rePlay)
-        {
-            GamePanel.rePlay = false;
-            JoinGameRoom(SelectedRoomLevel);
-        }
-        else if (!PhotonNetwork.InLobby)
-            PhotonNetwork.JoinLobby(SqlLobby);
-    }
-
-    public void JoinGameRoom(RoomLevel level)
-    {
-        SelectedRoomLevel = level;
-
-        if (!RoomManage.CanOpenRoom(level, PlayerManage.Wallet))
-        {
-            ModalHelper.WarningMessage("You Don't have enough money.");
-            return;
-        }
-
-        var sqlFilter = RoomManage.GetSqlLobbyFilter(level, PlayerManage.Wallet);
-
-        PhotonNetwork.JoinRandomRoom(null, 0, MatchmakingMode.FillRoom, SqlLobby, sqlFilter);
-
     }
 
 }

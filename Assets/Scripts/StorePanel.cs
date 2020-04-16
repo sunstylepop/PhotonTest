@@ -1,5 +1,4 @@
 ﻿using Assets.Scripts;
-using Assets.Scripts.Game.BlackJack.Model;
 using Assets.Scripts.Lobby;
 using Photon.Pun;
 using Photon.Realtime;
@@ -65,7 +64,7 @@ public class StorePanel : MonoBehaviour, IPanel
             foreach (var s in r.Store)
             {
 
-                if(PlayerManage.AllStoreItem.TryGetValue(s.ItemId, out CatalogItem _item))
+                if(SystemManage.AllStoreItem.TryGetValue(s.ItemId, out CatalogItem _item))
                 {
                     GameObject entry = Instantiate(StorePrefab);
                     if(_item.Bundle != null || _item.Container != null)

@@ -1,6 +1,17 @@
 ﻿
+using System.Collections.Generic;
+
 namespace Assets.Scripts
 {
+    public class BlackJackConfig
+    {
+        public static Dictionary<string, RoomFilterType> roomFilter = new Dictionary<string, RoomFilterType>()
+        {
+            { nameof(BlackJackRoom.ID), RoomFilterType.C0 },
+            { nameof(BlackJackRoom.GameCode), RoomFilterType.C1 },
+        };
+    }
+
     public enum RoomLevel
     {
         Low = 0,
